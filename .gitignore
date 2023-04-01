@@ -1,0 +1,7 @@
+
+
+/bin/
+/docs/
+
+#This is for debugging
+compile_commands.json 
