@@ -14,7 +14,10 @@
 #include "./ECS/components/Position_comp.hpp"
 #include "./ECS/components/Velocity_comp.hpp"
 #include "./ECS/components/Acceleration_comp.hpp"
-
+#include "./ECS/components/Motion_comp.hpp"
+#include "./ECS/components/Render_comp.hpp"
+#include "./ECS/components/Boundary_comp.hpp"
+#include "./ECS/components/Collision_comp.hpp"
 
 #define SCREEN_WIDTH_IN_PIXELS  640
 #define SCREEN_HEIGHT_IN_PIXELS 640
@@ -50,13 +53,14 @@ class ComponentStorage : public VComponentStorage{
   public:
 
     ComponentStorage(){
-        this->storage_container_index = 0;
+        this->storage_container_count = 0;
     }
 
     void add_component(T component){
     
-        this->storage_container[this->storage_container_index] = component;
-        this->storage_container_index++;
+        this->storage_container[this->storage_container_count] = component;
+        this->id_to_index_map.insert({component.entity_id, this->storage_container_count});
+        this->storage_container_count++;
     
     }
 
@@ -64,18 +68,26 @@ class ComponentStorage : public VComponentStorage{
 
         T* start_ptr = this->storage_container.data();
         
-        return &(start_ptr[entity_id]); 
+        return &(start_ptr[this->id_to_index_map[entity_id]]); 
     }
 
     size_t get_component_count(){
-        return this->storage_container.size();    
+        return this->storage_container_count;    
+    }
+
+    T *begin(){
+        return this->storage_container.data();
+    }
+    
+    T *end(){
+       return this->storage_container.data() + this->storage_container_count; 
     }
   
   private:
       std::array<T, MAX_ENTITIES> storage_container;
-      size_t storage_container_index;
+      size_t storage_container_count;
 
-      std::map<int, size_t> map;  
+      std::map<int, size_t> id_to_index_map;  
 };
 
 class ECS_Mananger{
@@ -119,6 +131,24 @@ class ECS_Mananger{
         return my_ptr->get_component_count(); 
     }
 
+    template<typename T>
+    T* get_component_begin(){
+        const char *type_name = typeid(T).name();
+
+        ComponentStorage<T>* my_ptr = static_cast<ComponentStorage<T>*>(this->T_to_comp_storage_Map[type_name]);
+
+        return my_ptr->begin();
+    }
+
+    template<typename T>
+    T* get_component_end(){
+        const char *type_name = typeid(T).name();
+
+        ComponentStorage<T>* my_ptr = static_cast<ComponentStorage<T>*>(this->T_to_comp_storage_Map[type_name]);
+
+        return my_ptr->end();
+    }
+
   private:
 
     std::map<std::string, VComponentStorage*> T_to_comp_storage_Map;
@@ -140,20 +170,22 @@ void Physics_init(std::vector<Position_Component> &a){
     } 
 }
 
-void Physics_System(ECS_Mananger &world){
+void Motion_System(ECS_Mananger &world){
 
-    for (int i = 0; i < world.get_component_count<Position_Component>(); i ++){
-        Vector2D temp_pos = world.get_component<Position_Component>(i)->position;
+    for (auto it = world.get_component_begin<Motion_Component>(); 
+              it < world.get_component_end<Motion_Component>(); it++){ 
         
-        Vector2D new_pos  = world.get_component<Position_Component>(i)->position + 
-                   TEMP_DT*(world.get_component<Velocity_Component>(i)->velocity) + 
-                   TEMP_DT*TEMP_DT * (world.get_component<Acceleration_Component>(i)->accel);  
+        Vector2D temp_pos = world.get_component<Position_Component>(it->entity_id)->position;
         
-        world.get_component<Position_Component>(i)->position   = new_pos; 
-        world.get_component<PositionZ1_Component>(i)->position = temp_pos;
+        Vector2D new_pos  = world.get_component<Position_Component>(it->entity_id)->position + 
+                   TEMP_DT*(world.get_component<Velocity_Component>(it->entity_id)->velocity) + 
+                   TEMP_DT*TEMP_DT * (world.get_component<Acceleration_Component>(it->entity_id)->accel);  
         
-        world.get_component<Velocity_Component>(i)->velocity = (1/TEMP_DT)*(world.get_component<Position_Component>(i)->position - 
-                                                        world.get_component<PositionZ1_Component>(i)->position);
+        world.get_component<Position_Component>(it->entity_id)->position   = new_pos; 
+        world.get_component<PositionZ1_Component>(it->entity_id)->position = temp_pos;
+        
+        world.get_component<Velocity_Component>(it->entity_id)->velocity = (1/TEMP_DT)*(world.get_component<Position_Component>(it->entity_id)->position - 
+                                                        world.get_component<PositionZ1_Component>(it->entity_id)->position);
     }
 
 };
@@ -164,8 +196,9 @@ void Render_System(ECS_Mananger &world){
     BeginDrawing();
     ClearBackground(BLACK); 
 
-    for (int i = 0; i < world.get_component_count<Position_Component>(); i ++){
-        Vector2D obj_pos = world.get_component<Position_Component>(i)->position;  
+    for (auto it = world.get_component_begin<Position_Component>(); 
+              it < world.get_component_end<Position_Component>(); it++){
+        Vector2D obj_pos = world.get_component<Position_Component>(it->entity_id)->position;  
         raylib::Vector2 temp_pos(world2screen_X(obj_pos.x),world2screen_Y(obj_pos.y) );
         temp_pos.DrawCircle(world2screen_X(OBJECT_RADIUS), BLUE);
            
@@ -177,25 +210,29 @@ void Render_System(ECS_Mananger &world){
     
 }
 
-void Bounds_System(ECS_Mananger &world){
-    //for (auto it = world.pos_comps.begin(); it != world.pos_comps.end(); ++ it){
-      for (int i = 0; i < world.get_component_count<Position_Component>(); i ++){
-        Position_Component *pos_comp_ptr = world.get_component<Position_Component>(i);   
-        if(pos_comp_ptr->position.x < 0){
-            pos_comp_ptr->position.x = 0;
-            world.get_component<Velocity_Component>(i)->velocity.x *= -0.75;
+void Boundary_System(ECS_Mananger &world){
+     
+    for (auto it = world.get_component_begin<Boundary_Component>(); 
+              it < world.get_component_end<Boundary_Component>(); it++){
+
+        Position_Component *pos_comp_ptr = world.get_component<Position_Component>(it->entity_id);
+        Collision_Component *coll_comp_ptr = world.get_component<Collision_Component>(it->entity_id);
+
+        if((pos_comp_ptr->position.x  - coll_comp_ptr->radius)< 0){
+            pos_comp_ptr->position.x = coll_comp_ptr->radius;
+            world.get_component<Velocity_Component>(it->entity_id)->velocity.x *= -0.75;
         }
-        if(pos_comp_ptr->position.x > 4.0){
-            pos_comp_ptr->position.x = 4.0;
-            world.get_component<Velocity_Component>(i)->velocity.x *= -0.75;
+        if(pos_comp_ptr->position.x + coll_comp_ptr->radius> 4.0){
+            pos_comp_ptr->position.x = 4.0 - coll_comp_ptr->radius;
+            world.get_component<Velocity_Component>(it->entity_id)->velocity.x *= -0.75;
         }
-        if(pos_comp_ptr->position.y < 0){
-            pos_comp_ptr->position.y = 0;
-            world.get_component<Velocity_Component>(i)->velocity.y *= -0.75;
+        if((pos_comp_ptr->position.y - coll_comp_ptr->radius) < 0){
+            pos_comp_ptr->position.y = coll_comp_ptr->radius;
+            world.get_component<Velocity_Component>(it->entity_id)->velocity.y *= -0.75;
         }
-        if(pos_comp_ptr->position.y > 4.0){
-            pos_comp_ptr->position.y = 4.0;
-            world.get_component<Velocity_Component>(i)->velocity.y *= -0.75;
+        if(pos_comp_ptr->position.y + coll_comp_ptr->radius> 4.0){
+            pos_comp_ptr->position.y = 4.0 - coll_comp_ptr->radius;
+            world.get_component<Velocity_Component>(it->entity_id)->velocity.y *= -0.75;
         }
     }
 }
@@ -220,6 +257,12 @@ int main() {
     //Create Arrays
    
     ECS_Mananger my_world;
+    
+    // Indicator Components - should these be 'archetypes'?
+    my_world.register_component<Motion_Component>();
+    my_world.register_component<Render_Component>();
+    my_world.register_component<Boundary_Component>();
+    my_world.register_component<Collision_Component>();
 
     my_world.register_component<PositionZ1_Component>();
     my_world.register_component<Position_Component>();
@@ -227,18 +270,27 @@ int main() {
     my_world.register_component<Acceleration_Component>();
     
 
-    for (int i = 0; i < 20; i++){
-        int entity_id = i;
+    for (int entity_id = 0; entity_id < TOTAL_OBJECTS; entity_id++){
+ 
         PositionZ1_Component init_posz1_val = {entity_id, Vector2D(1.0, 2.0)};
         Position_Component init_pos_val     = {entity_id, Vector2D(1.0, 2.0)};
-        Velocity_Component init_vel_val     = {entity_id, Vector2D(i*0.1, pow(i, 1.2)*0.1)};
-        Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, -9.81)}; 
-    
+        Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.2)*0.1)};
+        Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, 0.0)}; 
+        
+        Motion_Component init_mot_val       = {entity_id}; 
+        Render_Component init_render_val    = {entity_id};
+        Boundary_Component init_bounds_val  = {entity_id};
+        Collision_Component init_coll_comp  = {entity_id, OBJECT_RADIUS};
+        
         my_world.add_component<PositionZ1_Component>(init_posz1_val);
         my_world.add_component<Position_Component>(init_pos_val);
         my_world.add_component<Velocity_Component>(init_vel_val);
         my_world.add_component<Acceleration_Component>(init_acc_val); 
-
+ 
+        my_world.add_component<Motion_Component>(init_mot_val);
+        my_world.add_component<Render_Component>(init_render_val); 
+        my_world.add_component<Boundary_Component>(init_bounds_val);
+        my_world.add_component<Collision_Component>(init_coll_comp);
     }
 
     
@@ -246,9 +298,9 @@ int main() {
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
         // Update
-        Physics_System(my_world); 
+        Motion_System(my_world); 
         Render_System(my_world);
-        Bounds_System(my_world);
+        Boundary_System(my_world);
     }
 
     return 0;
