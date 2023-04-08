@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <math.h>
 
 class Vector2D {
   public:
@@ -20,6 +21,9 @@ class Vector2D {
 
     void print(){ std::cout << "(" << this->x << "," << this->y << ")" << std::endl; };
 
+    double mag(){
+        return sqrt(this->x * this->x + this->y * this->y); 
+    }
 
     Vector2D operator+(const Vector2D& vec){
         Vector2D result;
@@ -41,6 +45,20 @@ class Vector2D {
         
         this->x = vec.x;
         this->y = vec.y;
+        return *this;
+    }
+    
+    Vector2D operator+=(const Vector2D& vec){
+        
+        this->x = this->x + vec.x;
+        this->y = this->y + vec.y;
+        return *this;
+    }
+
+    Vector2D operator-=(const Vector2D& vec){
+        
+        this->x = this->x - vec.x;
+        this->y = this->y - vec.y;
         return *this;
     }
 
