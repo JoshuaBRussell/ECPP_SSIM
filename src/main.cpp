@@ -4,6 +4,7 @@
 #include <typeinfo>
 #include <memory>
 #include <array>
+#include <set>
 
 #include <math.h>
 
@@ -31,7 +32,7 @@
 
 #define TOTAL_SUBSTEPS 8
 
-#define TOTAL_OBJECTS 10
+#define TOTAL_OBJECTS 50 
 
 #define TARGET_FPS 60.0
 
@@ -149,10 +150,31 @@ class ECS_Mananger{
         return my_ptr->end();
     }
 
+    int create_entity(){
+
+        // loop through until a non-used ID is found
+        int id_candidate = 0;
+       
+        //On the first call, container.begin() == container.end()
+        //since it is empty. This means that 0 is a valid entry.
+        //Any call after that, will be checked.
+        std::set<int>::iterator it = this->id_container.begin();
+        while (it != this->id_container.end()){
+            
+            id_candidate++;
+            it = this->id_container.find(id_candidate);  
+       
+        }
+        //Valid ID found. Insert into container
+        this->id_container.insert(id_candidate);
+
+        return id_candidate;
+    }
+
   private:
 
     std::map<std::string, VComponentStorage*> T_to_comp_storage_Map;
-    
+    std::set<int> id_container; 
 
 };
 
@@ -163,29 +185,43 @@ static double world2screen_Y(double y){
     return y * -((double)SCREEN_HEIGHT_IN_PIXELS/SCREEN_HEIGHT_METERS) + (double)SCREEN_HEIGHT_IN_PIXELS;
 }
 
-void Physics_init(std::vector<Position_Component> &a){
+void Physics_init(std::vector<Position_Component> &a, double dt){
     for (int i = 0; i < a.size(); i++){
         Vector2D temp_vec(2.0, 2.0);
         a[i].position = temp_vec;
     } 
 }
 
-void Motion_System(ECS_Mananger &world){
+void Motion_System(ECS_Mananger &world, float dt){
 
     for (auto it = world.get_component_begin<Motion_Component>(); 
               it < world.get_component_end<Motion_Component>(); it++){ 
         
         Vector2D temp_pos = world.get_component<Position_Component>(it->entity_id)->position;
         
+        /*
         Vector2D new_pos  = world.get_component<Position_Component>(it->entity_id)->position + 
-                   TEMP_DT*(world.get_component<Velocity_Component>(it->entity_id)->velocity) + 
-                   TEMP_DT*TEMP_DT * (world.get_component<Acceleration_Component>(it->entity_id)->accel);  
-        
+                   dt*(world.get_component<Velocity_Component>(it->entity_id)->velocity) + 
+                   dt*dt * (world.get_component<Acceleration_Component>(it->entity_id)->accel);  
+        */
+        /*
+        Vector2D new_pos = 2*world.get_component<Position_Component>(it->entity_id)->position - 
+                             world.get_component<PositionZ1_Component>(it->entity_id)->position +
+                             dt*dt * (world.get_component<Acceleration_Component>(it->entity_id)->accel);   
+        */
+
+        Vector2D new_pos = world.get_component<Position_Component>(it->entity_id)->position +
+                           dt*world.get_component<Velocity_Component>(it->entity_id)->velocity +
+                           0.5*dt*dt*world.get_component<Acceleration_Component>(it->entity_id)->accel;
         world.get_component<Position_Component>(it->entity_id)->position   = new_pos; 
         world.get_component<PositionZ1_Component>(it->entity_id)->position = temp_pos;
-        
-        world.get_component<Velocity_Component>(it->entity_id)->velocity = (1/TEMP_DT)*(world.get_component<Position_Component>(it->entity_id)->position - 
-                                                        world.get_component<PositionZ1_Component>(it->entity_id)->position);
+
+        Vector2D new_vel = world.get_component<Velocity_Component>(it->entity_id)->velocity + 
+                  dt*world.get_component<Acceleration_Component>(it->entity_id)->accel;
+       
+        world.get_component<Velocity_Component>(it->entity_id)->velocity = new_vel;
+        //world.get_component<Velocity_Component>(it->entity_id)->velocity = (1/dt)*(world.get_component<Position_Component>(it->entity_id)->position - 
+        //                                                world.get_component<PositionZ1_Component>(it->entity_id)->position);
     }
 
 };
@@ -237,11 +273,77 @@ void Boundary_System(ECS_Mananger &world){
     }
 }
 
+void Collision_System(ECS_Mananger &world, double dt){
+
+    for (auto coll_A = world.get_component_begin<Boundary_Component>(); 
+              coll_A < world.get_component_end<Boundary_Component>(); coll_A++){
+
+        Position_Component *pos_comp_A_ptr = world.get_component<Position_Component>(coll_A->entity_id);  
+        for (auto coll_B = world.get_component_begin<Boundary_Component>(); 
+              coll_B < world.get_component_end<Boundary_Component>(); coll_B++){
+             
+            if (coll_A != coll_B){
+                Position_Component *pos_comp_B_ptr = world.get_component<Position_Component>(coll_B->entity_id);   
+                // Find distance between to OBJECT_RADIUS
+                Vector2D disp_vec = pos_comp_A_ptr->position - pos_comp_B_ptr->position;
+                double dist = disp_vec.mag();
+                // If the distance is less the sum of their radii -> collision occured
+                
+                if ( dist <= 2*OBJECT_RADIUS){
+                    Vector2D norm_vec = (1/dist)*(disp_vec);
+
+                    Vector2D temp = (2*OBJECT_RADIUS - dist) * norm_vec;
+                    Vector2D prev_pos_A = pos_comp_A_ptr->position;
+                    Vector2D prev_pos_B = pos_comp_B_ptr->position;
+                    
+                    pos_comp_A_ptr->position += temp;
+                    pos_comp_B_ptr->position -= temp; 
+                    
+                    // Update Velocities
+                     
+                    Velocity_Component *vel_comp_A_ptr = world.get_component<Velocity_Component>(coll_A->entity_id);  
+                    Velocity_Component *vel_comp_B_ptr = world.get_component<Velocity_Component>(coll_B->entity_id);
+                    
+                    Vector2D temp_vel = vel_comp_A_ptr->velocity;
+                    vel_comp_A_ptr->velocity = vel_comp_B_ptr->velocity;
+                    vel_comp_B_ptr->velocity = temp_vel; 
+                    
+
+                }
+                
+            }
+        }
+    }
+}
+
 static float get_randf(){
     return (float)(rand()) / (float)(RAND_MAX);
 }
 
+static void add_new_ball(ECS_Mananger &my_world){
+    
+    int entity_id = my_world.create_entity();
+    std::cout << entity_id << std::endl;
+    PositionZ1_Component init_posz1_val = {entity_id, Vector2D(1.0, 2.0)};
+    Position_Component init_pos_val     = {entity_id, Vector2D(1.0, 2.0)};
+    Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.2)*0.1)};
+    Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, -0.81)}; 
+    
+    Motion_Component init_mot_val       = {entity_id}; 
+    Render_Component init_render_val    = {entity_id};
+    Boundary_Component init_bounds_val  = {entity_id};
+    Collision_Component init_coll_comp  = {entity_id, OBJECT_RADIUS};
+    
+    my_world.add_component<PositionZ1_Component>(init_posz1_val);
+    my_world.add_component<Position_Component>(init_pos_val);
+    my_world.add_component<Velocity_Component>(init_vel_val);
+    my_world.add_component<Acceleration_Component>(init_acc_val); 
 
+    my_world.add_component<Motion_Component>(init_mot_val);
+    my_world.add_component<Render_Component>(init_render_val); 
+    my_world.add_component<Boundary_Component>(init_bounds_val);
+    my_world.add_component<Collision_Component>(init_coll_comp); 
+}
 
 
 int main() {
@@ -249,9 +351,11 @@ int main() {
     // Initialization
     raylib::Color textColor(LIGHTGRAY);
     raylib::Window w(SCREEN_WIDTH_IN_PIXELS, SCREEN_HEIGHT_IN_PIXELS, WINDOW_NAME);
+    raylib::Mouse Mouse;
     
     raylib::Rectangle box(10, GetScreenHeight()/2 - 50, 200, 100);
 
+    
     SetTargetFPS(TARGET_FPS);
 
     //Create Arrays
@@ -270,12 +374,13 @@ int main() {
     my_world.register_component<Acceleration_Component>();
     
 
-    for (int entity_id = 0; entity_id < TOTAL_OBJECTS; entity_id++){
- 
+    for (int entity_id = 0; entity_id < 5; entity_id++){
+        add_new_ball(my_world);
+        /* 
         PositionZ1_Component init_posz1_val = {entity_id, Vector2D(1.0, 2.0)};
         Position_Component init_pos_val     = {entity_id, Vector2D(1.0, 2.0)};
         Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.2)*0.1)};
-        Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, 0.0)}; 
+        Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, 0.81)}; 
         
         Motion_Component init_mot_val       = {entity_id}; 
         Render_Component init_render_val    = {entity_id};
@@ -291,16 +396,45 @@ int main() {
         my_world.add_component<Render_Component>(init_render_val); 
         my_world.add_component<Boundary_Component>(init_bounds_val);
         my_world.add_component<Collision_Component>(init_coll_comp);
+    */
     }
 
+    std::set<int> id_container;
+    std::set<int>::iterator it;
+    id_container.insert(1);
+    id_container.insert(5); 
+    id_container.insert(3);
     
+    it = id_container.find(4);
+    if (it != id_container.end()){
+        std::cout << "Found: "<< *it << std::endl;
+    }
+
+
+    for (auto &num: id_container){
+        std::cout << num << std::endl;
+    }
+    
+    int count = 5;
     // Main game loop
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
+        if (Mouse.IsButtonPressed(0)){
+
+            add_new_ball(my_world);
+            std::cout << count << std::endl;
+            count++;
+        }
         // Update
-        Motion_System(my_world); 
+        for (int i = 0; i < 8; i++){
+            
+            Motion_System(my_world, TEMP_DT/8); 
+            Collision_System(my_world, TEMP_DT/8);  
+            Boundary_System(my_world); 
+        }
+
         Render_System(my_world);
-        Boundary_System(my_world);
+        
     }
 
     return 0;
