@@ -179,11 +179,20 @@ class ECS_Mananger{
 
 };
 
+//Acale differences
+static double world2screenscale_X(double x){
+    return x * ((double)SCREEN_WIDTH_IN_PIXELS/SCREEN_WIDTH_METERS);  
+}
+static double world2screenscale_Y(double y){
+    return y * ((double)SCREEN_HEIGHT_IN_PIXELS/SCREEN_HEIGHT_METERS);
+}
+
+// Coord transform that assumes orthogonality for the transform
 static double world2screen_X(double x){
-    return x * ((double)SCREEN_WIDTH_IN_PIXELS/SCREEN_WIDTH_METERS); 
+    return world2screenscale_X(x);
 }
 static double world2screen_Y(double y){
-    return y * -((double)SCREEN_HEIGHT_IN_PIXELS/SCREEN_HEIGHT_METERS) + (double)SCREEN_HEIGHT_IN_PIXELS;
+    return -world2screenscale_Y(y) + (double)SCREEN_HEIGHT_IN_PIXELS;
 }
 
 void Physics_init(std::vector<Position_Component> &a, double dt){
@@ -229,7 +238,6 @@ void Motion_System(ECS_Mananger &world, float dt){
 
 static std::map<std::string, raylib::Texture2D*> texture_repo;
 void Render_init(){};
-
 void Render_System(ECS_Mananger &world){
    
     BeginDrawing();
@@ -250,12 +258,14 @@ void Render_System(ECS_Mananger &world){
         
         raylib::Texture2D *texture_ptr = texture_repo[tex_loc];
         Vector2 tex_size = texture_ptr->GetSize();
-        float scale_factor = ((float)world2screen_X(2*OBJECT_RADIUS))/tex_size.x; 
           
-        raylib::Vector2 temp_pos(world2screen_X(obj_pos.x) - scale_factor*tex_size.x/2, 
-                                 world2screen_Y(obj_pos.y) - scale_factor*tex_size.y/2); 
-     
-        texture_ptr->Draw(temp_pos, 0.0, scale_factor);
+        raylib::Rectangle src_rec(0.0, 0.0, tex_size.x, tex_size.y); // Use the entire texture size
+        raylib::Rectangle dest_rec(world2screen_X(obj_pos.x), world2screen_Y(obj_pos.y), 
+                                   world2screenscale_X(2*OBJECT_RADIUS), world2screenscale_Y(2*OBJECT_RADIUS));
+        
+        //origin is relative to dest_rec
+        raylib::Vector2 origin = {world2screenscale_X(2*OBJECT_RADIUS)/2, world2screenscale_Y(2*OBJECT_RADIUS/2)};
+        texture_ptr->Draw(src_rec, dest_rec, origin, 0.0);
            
     }
 
