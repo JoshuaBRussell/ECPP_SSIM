@@ -5,6 +5,7 @@
 #include <memory>
 #include <array>
 #include <set>
+#include <string>
 
 #include <math.h>
 
@@ -226,7 +227,9 @@ void Motion_System(ECS_Mananger &world, float dt){
 
 };
 
+static std::map<std::string, raylib::Texture2D*> texture_repo;
 void Render_init(){};
+
 void Render_System(ECS_Mananger &world){
    
     BeginDrawing();
@@ -234,9 +237,26 @@ void Render_System(ECS_Mananger &world){
 
     for (auto it = world.get_component_begin<Position_Component>(); 
               it < world.get_component_end<Position_Component>(); it++){
+        
+        // Check to see if the texture has been seen before
+        std::string tex_loc = world.get_component<Render_Component>(it->entity_id)->texture_loc;
+        if (texture_repo.find(tex_loc) == texture_repo.end()){
+            // Add it to the texture texture_repo
+            raylib::Texture2D* texture_ptr = new raylib::Texture2D("./misc/RedCirc.png");
+            texture_repo.insert({tex_loc, texture_ptr}); 
+        }
+
+
+
+
         Vector2D obj_pos = world.get_component<Position_Component>(it->entity_id)->position;  
         raylib::Vector2 temp_pos(world2screen_X(obj_pos.x),world2screen_Y(obj_pos.y) );
-        temp_pos.DrawCircle(world2screen_X(OBJECT_RADIUS), BLUE);
+        
+        raylib::Texture2D *texture = texture_repo[tex_loc];
+
+        texture->Draw(temp_pos, 0.0, 12.8*0.05);
+        
+        //temp_pos.DrawCircle(world2screen_X(OBJECT_RADIUS), BLUE);
            
     }
 
@@ -323,14 +343,14 @@ static float get_randf(){
 static void add_new_ball(ECS_Mananger &my_world){
     
     int entity_id = my_world.create_entity();
-    std::cout << entity_id << std::endl;
+    
     PositionZ1_Component init_posz1_val = {entity_id, Vector2D(1.0, 2.0)};
     Position_Component init_pos_val     = {entity_id, Vector2D(1.0, 2.0)};
     Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.2)*0.1)};
     Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, -0.81)}; 
     
     Motion_Component init_mot_val       = {entity_id}; 
-    Render_Component init_render_val    = {entity_id};
+    Render_Component init_render_val    = {entity_id, "./misc/RedCirc.png"};
     Boundary_Component init_bounds_val  = {entity_id};
     Collision_Component init_coll_comp  = {entity_id, OBJECT_RADIUS};
     
@@ -376,54 +396,34 @@ int main() {
 
     for (int entity_id = 0; entity_id < 5; entity_id++){
         add_new_ball(my_world);
-        /* 
-        PositionZ1_Component init_posz1_val = {entity_id, Vector2D(1.0, 2.0)};
-        Position_Component init_pos_val     = {entity_id, Vector2D(1.0, 2.0)};
-        Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.2)*0.1)};
-        Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, 0.81)}; 
-        
-        Motion_Component init_mot_val       = {entity_id}; 
-        Render_Component init_render_val    = {entity_id};
-        Boundary_Component init_bounds_val  = {entity_id};
-        Collision_Component init_coll_comp  = {entity_id, OBJECT_RADIUS};
-        
-        my_world.add_component<PositionZ1_Component>(init_posz1_val);
-        my_world.add_component<Position_Component>(init_pos_val);
-        my_world.add_component<Velocity_Component>(init_vel_val);
-        my_world.add_component<Acceleration_Component>(init_acc_val); 
- 
-        my_world.add_component<Motion_Component>(init_mot_val);
-        my_world.add_component<Render_Component>(init_render_val); 
-        my_world.add_component<Boundary_Component>(init_bounds_val);
-        my_world.add_component<Collision_Component>(init_coll_comp);
-    */
     }
-
-    std::set<int> id_container;
-    std::set<int>::iterator it;
-    id_container.insert(1);
-    id_container.insert(5); 
-    id_container.insert(3);
+    raylib::Texture2D red_texture("./misc/RedCirc.png");
+    raylib::Texture2D blue_texture("./misc/BlueCirc.png");
+    raylib::Texture2D* tex = new raylib::Texture2D("./misc/RedCirc.png"); 
     
-    it = id_container.find(4);
-    if (it != id_container.end()){
-        std::cout << "Found: "<< *it << std::endl;
-    }
-
-
-    for (auto &num: id_container){
-        std::cout << num << std::endl;
-    }
+    std::map<std::string, raylib::Texture2D*> a;
+    a.insert({"Red", &red_texture});
+    a.insert({"Blue", &blue_texture});
+    a.insert({"Red", &red_texture});
+    a.insert({"NotRed", tex});
     
-    int count = 5;
+
+    std::map<std::string, raylib::Texture2D*>::iterator it;
+    for (it = a.begin(); it != a.end(); ++it){
+        std::cout << it->first << std::endl;
+    }
     // Main game loop
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
+        //BeginDrawing();
+        //Vector2 loc = {320-32, 320 - 32};
+        //red_texture.Draw(loc, 0.0, 0.5);
+        //EndDrawing();
+
+        
         if (Mouse.IsButtonPressed(0)){
 
             add_new_ball(my_world);
-            std::cout << count << std::endl;
-            count++;
         }
         // Update
         for (int i = 0; i < 8; i++){
