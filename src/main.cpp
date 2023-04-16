@@ -245,18 +245,17 @@ void Render_System(ECS_Mananger &world){
             raylib::Texture2D* texture_ptr = new raylib::Texture2D("./misc/RedCirc.png");
             texture_repo.insert({tex_loc, texture_ptr}); 
         }
-
-
-
-
-        Vector2D obj_pos = world.get_component<Position_Component>(it->entity_id)->position;  
-        raylib::Vector2 temp_pos(world2screen_X(obj_pos.x),world2screen_Y(obj_pos.y) );
         
-        raylib::Texture2D *texture = texture_repo[tex_loc];
-
-        texture->Draw(temp_pos, 0.0, 12.8*0.05);
+        Vector2D obj_pos = world.get_component<Position_Component>(it->entity_id)->position;
         
-        //temp_pos.DrawCircle(world2screen_X(OBJECT_RADIUS), BLUE);
+        raylib::Texture2D *texture_ptr = texture_repo[tex_loc];
+        Vector2 tex_size = texture_ptr->GetSize();
+        float scale_factor = ((float)world2screen_X(2*OBJECT_RADIUS))/tex_size.x; 
+          
+        raylib::Vector2 temp_pos(world2screen_X(obj_pos.x) - scale_factor*tex_size.x/2, 
+                                 world2screen_Y(obj_pos.y) - scale_factor*tex_size.y/2); 
+     
+        texture_ptr->Draw(temp_pos, 0.0, scale_factor);
            
     }
 
