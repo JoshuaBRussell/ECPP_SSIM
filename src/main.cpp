@@ -250,7 +250,7 @@ void Render_System(ECS_Mananger &world){
         std::string tex_loc = world.get_component<Render_Component>(it->entity_id)->texture_loc;
         if (texture_repo.find(tex_loc) == texture_repo.end()){
             // Add it to the texture texture_repo
-            raylib::Texture2D* texture_ptr = new raylib::Texture2D("./misc/RedCirc.png");
+            raylib::Texture2D* texture_ptr = new raylib::Texture2D(tex_loc);
             texture_repo.insert({tex_loc, texture_ptr}); 
         }
         
@@ -359,7 +359,7 @@ static void add_new_ball(ECS_Mananger &my_world){
     Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, -0.81)}; 
     
     Motion_Component init_mot_val       = {entity_id}; 
-    Render_Component init_render_val    = {entity_id, "./misc/RedCirc.png"};
+    Render_Component init_render_val    = {entity_id, "./misc/BlueCirc.png"};
     Boundary_Component init_bounds_val  = {entity_id};
     Collision_Component init_coll_comp  = {entity_id, OBJECT_RADIUS};
     
