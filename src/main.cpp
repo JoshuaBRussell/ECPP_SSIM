@@ -396,29 +396,10 @@ int main() {
     for (int entity_id = 0; entity_id < 5; entity_id++){
         add_new_ball(my_world);
     }
-    raylib::Texture2D red_texture("./misc/RedCirc.png");
-    raylib::Texture2D blue_texture("./misc/BlueCirc.png");
-    raylib::Texture2D* tex = new raylib::Texture2D("./misc/RedCirc.png"); 
     
-    std::map<std::string, raylib::Texture2D*> a;
-    a.insert({"Red", &red_texture});
-    a.insert({"Blue", &blue_texture});
-    a.insert({"Red", &red_texture});
-    a.insert({"NotRed", tex});
-    
-
-    std::map<std::string, raylib::Texture2D*>::iterator it;
-    for (it = a.begin(); it != a.end(); ++it){
-        std::cout << it->first << std::endl;
-    }
     // Main game loop
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
-        //BeginDrawing();
-        //Vector2 loc = {320-32, 320 - 32};
-        //red_texture.Draw(loc, 0.0, 0.5);
-        //EndDrawing();
-
         
         if (Mouse.IsButtonPressed(0)){
 
