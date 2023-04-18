@@ -29,7 +29,7 @@
 
 #define WORLD_RADIUS (SCREEN_WIDTH_METERS/2)
 
-#define OBJECT_RADIUS 0.05
+#define OBJECT_RADIUS 0.1
 
 #define TOTAL_SUBSTEPS 8
 
@@ -359,7 +359,7 @@ static void add_new_ball(ECS_Mananger &my_world){
     Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, -0.81)}; 
     
     Motion_Component init_mot_val       = {entity_id}; 
-    Render_Component init_render_val    = {entity_id, "./misc/BlueCirc.png"};
+    Render_Component init_render_val    = {entity_id, "./misc/BronzeGear.png"};
     Boundary_Component init_bounds_val  = {entity_id};
     Collision_Component init_coll_comp  = {entity_id, OBJECT_RADIUS};
     
