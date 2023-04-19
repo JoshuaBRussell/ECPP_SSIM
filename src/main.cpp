@@ -20,6 +20,7 @@
 #include "./ECS/components/Render_comp.hpp"
 #include "./ECS/components/Boundary_comp.hpp"
 #include "./ECS/components/Collision_comp.hpp"
+#include "./ECS/components/Controller_comp.hpp"
 
 #define SCREEN_WIDTH_IN_PIXELS  640
 #define SCREEN_HEIGHT_IN_PIXELS 640
@@ -29,7 +30,7 @@
 
 #define WORLD_RADIUS (SCREEN_WIDTH_METERS/2)
 
-#define OBJECT_RADIUS 0.1
+#define OBJECT_RADIUS 0.05
 
 #define TOTAL_SUBSTEPS 8
 
@@ -202,6 +203,20 @@ void Physics_init(std::vector<Position_Component> &a, double dt){
     } 
 }
 
+void Controller_System(ECS_Mananger &world){ 
+    
+    //Assumes that the input is the Acceleration of the Component
+    for (auto it = world.get_component_begin<Controller_Component>();
+              it < world.get_component_end<Controller_Component>(); it++){
+        
+        Vector2D des_pos = it->input;
+
+        Vector2D act_pos = world.get_component<Position_Component>(it->entity_id)->position;
+        world.get_component<Acceleration_Component>(it->entity_id)->accel = it->K_Gain*(des_pos - act_pos);
+    
+    }
+}
+
 void Motion_System(ECS_Mananger &world, float dt){
 
     for (auto it = world.get_component_begin<Motion_Component>(); 
@@ -358,8 +373,10 @@ static void add_new_ball(ECS_Mananger &my_world){
     Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.2)*0.1)};
     Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, -0.81)}; 
     
+    Controller_Component init_contr_val = {entity_id, 5.0, 0.0, Vector2D(2.0, 2.0)};
+    
     Motion_Component init_mot_val       = {entity_id}; 
-    Render_Component init_render_val    = {entity_id, "./misc/BronzeGear.png"};
+    Render_Component init_render_val    = {entity_id, "./misc/RedCirc.png"};
     Boundary_Component init_bounds_val  = {entity_id};
     Collision_Component init_coll_comp  = {entity_id, OBJECT_RADIUS};
     
@@ -367,6 +384,8 @@ static void add_new_ball(ECS_Mananger &my_world){
     my_world.add_component<Position_Component>(init_pos_val);
     my_world.add_component<Velocity_Component>(init_vel_val);
     my_world.add_component<Acceleration_Component>(init_acc_val); 
+
+    my_world.add_component<Controller_Component>(init_contr_val);
 
     my_world.add_component<Motion_Component>(init_mot_val);
     my_world.add_component<Render_Component>(init_render_val); 
@@ -396,6 +415,8 @@ int main() {
     my_world.register_component<Render_Component>();
     my_world.register_component<Boundary_Component>();
     my_world.register_component<Collision_Component>();
+    
+    my_world.register_component<Controller_Component>();
 
     my_world.register_component<PositionZ1_Component>();
     my_world.register_component<Position_Component>();
@@ -417,7 +438,7 @@ int main() {
         }
         // Update
         for (int i = 0; i < 8; i++){
-            
+            Controller_System(my_world); 
             Motion_System(my_world, TEMP_DT/8); 
             Collision_System(my_world, TEMP_DT/8);  
             Boundary_System(my_world); 
