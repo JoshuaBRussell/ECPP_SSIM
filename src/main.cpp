@@ -93,11 +93,11 @@ class ComponentStorage : public VComponentStorage{
       std::map<int, size_t> id_to_index_map;  
 };
 
-class ECS_Mananger{
+class ECS_Manager{
 
   public:
     
-    ECS_Mananger(){
+    ECS_Manager(){
 
     }
     
@@ -203,7 +203,7 @@ void Physics_init(std::vector<Position_Component> &a, double dt){
     } 
 }
 
-void Controller_System(ECS_Mananger &world){ 
+void Controller_System(ECS_Manager &world){ 
     
     //Assumes that the input is the Acceleration of the Component
     for (auto it = world.get_component_begin<Controller_Component>();
@@ -217,7 +217,7 @@ void Controller_System(ECS_Mananger &world){
     }
 }
 
-void Motion_System(ECS_Mananger &world, float dt){
+void Motion_System(ECS_Manager &world, float dt){
 
     for (auto it = world.get_component_begin<Motion_Component>(); 
               it < world.get_component_end<Motion_Component>(); it++){ 
@@ -253,7 +253,7 @@ void Motion_System(ECS_Mananger &world, float dt){
 
 static std::map<std::string, raylib::Texture2D*> texture_repo;
 void Render_init(){};
-void Render_System(ECS_Mananger &world){
+void Render_System(ECS_Manager &world){
    
     BeginDrawing();
     ClearBackground(BLACK); 
@@ -290,7 +290,7 @@ void Render_System(ECS_Mananger &world){
     
 }
 
-void Boundary_System(ECS_Mananger &world){
+void Boundary_System(ECS_Manager &world){
      
     for (auto it = world.get_component_begin<Boundary_Component>(); 
               it < world.get_component_end<Boundary_Component>(); it++){
@@ -317,7 +317,7 @@ void Boundary_System(ECS_Mananger &world){
     }
 }
 
-void Collision_System(ECS_Mananger &world, double dt){
+void Collision_System(ECS_Manager &world, double dt){
 
     for (auto coll_A = world.get_component_begin<Boundary_Component>(); 
               coll_A < world.get_component_end<Boundary_Component>(); coll_A++){
@@ -364,7 +364,7 @@ static float get_randf(){
     return (float)(rand()) / (float)(RAND_MAX);
 }
 
-static void add_new_ball(ECS_Mananger &my_world){
+static void add_new_ball(ECS_Manager &my_world){
     
     int entity_id = my_world.create_entity();
     
@@ -408,7 +408,7 @@ int main() {
 
     //Create Arrays
    
-    ECS_Mananger my_world;
+    ECS_Manager my_world;
     
     // Indicator Components - should these be 'archetypes'?
     my_world.register_component<Motion_Component>();
