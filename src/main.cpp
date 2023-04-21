@@ -180,7 +180,26 @@ class ECS_Manager{
 
 };
 
-//Acale differences
+
+// The idea was that the scale functions would just transform the (...)scale_X/Y functions
+// would handle the scale factor - esque conversions
+//
+// The (...)_X/Y functions would handle the transforms. 
+//
+// I don't like this and it either needs to change or be made more clear which is which.
+static double screen2worldscale_X(int screen_x){
+    return screen_x * ((double)SCREEN_WIDTH_METERS/SCREEN_WIDTH_IN_PIXELS); 
+};
+
+static double screen2worldscale_Y(int screen_y){
+    return -(screen_y - SCREEN_HEIGHT_IN_PIXELS)*(SCREEN_HEIGHT_METERS/SCREEN_HEIGHT_IN_PIXELS);
+};
+
+static double screen2world_Y(int screen_y){
+    return  -(SCREEN_HEIGHT_METERS/(double)SCREEN_HEIGHT_IN_PIXELS) * (double)(screen_y - SCREEN_HEIGHT_IN_PIXELS);
+};
+
+//Scale differences
 static double world2screenscale_X(double x){
     return x * ((double)SCREEN_WIDTH_IN_PIXELS/SCREEN_WIDTH_METERS);  
 }
@@ -364,12 +383,12 @@ static float get_randf(){
     return (float)(rand()) / (float)(RAND_MAX);
 }
 
-static void add_new_ball(ECS_Manager &my_world){
+static void add_new_ball(ECS_Manager &my_world, Vector2D pos){
     
     int entity_id = my_world.create_entity();
     
-    PositionZ1_Component init_posz1_val = {entity_id, Vector2D(1.0, 2.0)};
-    Position_Component init_pos_val     = {entity_id, Vector2D(1.0, 2.0)};
+    PositionZ1_Component init_posz1_val = {entity_id, pos};
+    Position_Component init_pos_val     = {entity_id, pos};
     Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.2)*0.1)};
     Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, -0.81)}; 
     
@@ -422,10 +441,11 @@ int main() {
     my_world.register_component<Position_Component>();
     my_world.register_component<Velocity_Component>();
     my_world.register_component<Acceleration_Component>();
-    
+        
 
     for (int entity_id = 0; entity_id < 5; entity_id++){
-        add_new_ball(my_world);
+        Vector2D default_pos = Vector2D(1.5, 1.5);
+        add_new_ball(my_world, default_pos);
     }
     
     // Main game loop
@@ -433,8 +453,10 @@ int main() {
     {
         
         if (Mouse.IsButtonPressed(0)){
-
-            add_new_ball(my_world);
+            float x = screen2worldscale_X(Mouse.GetPosition().x);
+            float y = screen2world_Y(Mouse.GetPosition().y);
+            Vector2D pos = Vector2D(x, y);
+            add_new_ball(my_world, pos);
         }
         // Update
         for (int i = 0; i < 8; i++){
