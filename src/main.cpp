@@ -31,6 +31,8 @@
 #include "./ECS/components/Collision_comp.hpp"
 #include "./ECS/components/Controller_comp.hpp"
 
+#include "QuadTree.hpp"
+
 #define WORLD_RADIUS (SCREEN_WIDTH_METERS/2)
 
 #define TOTAL_SUBSTEPS 8
@@ -82,9 +84,15 @@ int main() {
     raylib::Mouse Mouse;
     
     SetTargetFPS(TARGET_FPS);
-
-    //Create Arrays
-   
+    
+    QuadTree my_qt(Vector2D(0.0, 0.0), Vector2D(4.0, 4.0), 16, 4);
+    
+    for (int i = 0; i < 5; i++){
+        my_qt.add_element(i, Vector2D(1.0, 1.0)); 
+    }
+    
+    
+    std::cout << "QT Count: " << my_qt.get_count() << std::endl;
     ECS_Manager my_world;
     
     // Indicator Components - should these be 'archetypes'?
