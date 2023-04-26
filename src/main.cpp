@@ -83,16 +83,8 @@ int main() {
     raylib::Window w(SCREEN_WIDTH_IN_PIXELS, SCREEN_HEIGHT_IN_PIXELS, WINDOW_NAME);
     raylib::Mouse Mouse;
     
-    SetTargetFPS(TARGET_FPS);
-    
-    QuadTree my_qt(Vector2D(0.0, 0.0), Vector2D(4.0, 4.0), 16, 4);
-    
-    for (int i = 0; i < 5; i++){
-        my_qt.add_element(i, Vector2D(1.0, 1.0)); 
-    }
-    
-    
-    std::cout << "QT Count: " << my_qt.get_count() << std::endl;
+    SetTargetFPS(TARGET_FPS); 
+     
     ECS_Manager my_world;
     
     // Indicator Components - should these be 'archetypes'?
@@ -107,12 +99,28 @@ int main() {
     my_world.register_component<Position_Component>();
     my_world.register_component<Velocity_Component>();
     my_world.register_component<Acceleration_Component>();
-        
 
-    for (int entity_id = 0; entity_id < 5; entity_id++){
-        Vector2D default_pos = Vector2D(1.5, 1.5);
-        add_new_ball(my_world, default_pos);
-    }
+    QuadTree my_qt(my_world, Vector2D(0.0, 0.0), Vector2D(4.0, 4.0), 16, 4);  
+
+    Vector2D default_pos = Vector2D(2.5, 2.5);
+    add_new_ball(my_world, default_pos);
+    my_qt.add_element(0, default_pos);
+
+    default_pos = Vector2D(1.5, 2.5);
+    add_new_ball(my_world, default_pos);
+    my_qt.add_element(1, default_pos);
+
+    default_pos = Vector2D(1.5, 1.5);
+    add_new_ball(my_world, default_pos);
+    my_qt.add_element(2, default_pos);
+   
+    default_pos = Vector2D(2.5, 1.5);
+    add_new_ball(my_world, default_pos);
+    my_qt.add_element(3, default_pos);
+
+    default_pos = Vector2D(0.5, 0.5);
+    add_new_ball(my_world, default_pos);
+    my_qt.add_element(4, default_pos);
     
     // Main game loop
     while (!w.ShouldClose()) // Detect window close button or ESC key
