@@ -46,9 +46,10 @@
 #define WINDOW_NAME "Virtual Bob"
 
 
-static void add_new_ball(ECS_Manager &my_world, Vector2D pos){
+static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree qt){
     
     int entity_id = my_world.create_entity();
+    qt.add_element(entity_id, pos);
     
     PositionZ1_Component init_posz1_val = {entity_id, pos};
     Position_Component init_pos_val     = {entity_id, pos};
@@ -102,26 +103,6 @@ int main() {
 
     QuadTree my_qt(my_world, Vector2D(0.0, 0.0), Vector2D(4.0, 4.0), 16, 4);  
 
-    Vector2D default_pos = Vector2D(2.5, 2.5);
-    add_new_ball(my_world, default_pos);
-    my_qt.add_element(0, default_pos);
-
-    default_pos = Vector2D(1.5, 2.5);
-    add_new_ball(my_world, default_pos);
-    my_qt.add_element(1, default_pos);
-
-    default_pos = Vector2D(1.5, 1.5);
-    add_new_ball(my_world, default_pos);
-    my_qt.add_element(2, default_pos);
-   
-    default_pos = Vector2D(2.5, 1.5);
-    add_new_ball(my_world, default_pos);
-    my_qt.add_element(3, default_pos);
-
-    default_pos = Vector2D(0.5, 0.5);
-    add_new_ball(my_world, default_pos);
-    my_qt.add_element(4, default_pos);
-    
     // Main game loop
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
@@ -130,12 +111,12 @@ int main() {
             float x = screen2worldscale_X(Mouse.GetPosition().x);
             float y = screen2world_Y(Mouse.GetPosition().y);
             Vector2D pos = Vector2D(x, y);
-            add_new_ball(my_world, pos);
+            add_new_ball(my_world, pos, my_qt);
         }
         // Update
         for (int i = 0; i < 8; i++){
             Controller_System(my_world); 
-            Motion_System(my_world, TEMP_DT/8); 
+            //Motion_System(my_world, TEMP_DT/8); 
             Collision_System(my_world, TEMP_DT/8);  
             Boundary_System(my_world); 
         }

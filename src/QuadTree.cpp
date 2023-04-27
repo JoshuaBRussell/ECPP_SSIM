@@ -55,47 +55,50 @@ void QuadTree::add_element(int ID, Vector2D pos){
         int child_offset = find_quad_offset(curr_bl, curr_tr, pos); 
         
         // Find new bott_left
-        if (0){
+        if (child_offset == 0){
             curr_bl = curr_bl + 0.5*w_h_vec; 
         }
-        if (1){
+        if (child_offset == 1){
             curr_bl = curr_bl + Vector2D(0.0, w_h_vec.y/2);
         }
-        if (2){
+        if (child_offset == 2){
             curr_bl = curr_bl; //i.e. no change
         }
-        if (3){
+        if (child_offset == 3){
             curr_bl = curr_bl + Vector2D(w_h_vec.x/2, 0.0);
         } 
         
         // Find new top_right
         curr_tr = curr_bl + 0.5 * w_h_vec;
 
-        curr_quad_node_ptr = curr_quad_node_ptr->first_child_ptr + child_offset;    
-        curr_depth++;
+        // Add check to make sure this is even in the correct location
+        assert(in_quadrant(curr_bl, curr_tr, pos));
 
         // Increment the parent's count since its children will get it too.
         // This currently doesn't assume there whill be any type of non-crashable behavior.
         // So either a child succesfully adds the new element - or it doesn't and the program
         // crashes, so there is no need to account for this. 
         curr_quad_node_ptr->data_node_count++; 
-    }
-    
-    // Go ahead and increment the node count - regardless if it splits or not
-    curr_quad_node_ptr->data_node_count++; 
 
+        curr_quad_node_ptr = curr_quad_node_ptr->first_child_ptr + child_offset;    
+        curr_depth++; 
+
+        std::cout << curr_depth << std::endl;
+    }
+     
+    struct QuadNode *parent = curr_quad_node_ptr; 
     // Decide if it needs to split - if so, distribute current elements amongst the children
     // data_node_count was incremented above 
-    if (curr_quad_node_ptr->data_node_count > this->max_node_capacity){
+    if (curr_quad_node_ptr->data_node_count >= this->max_node_capacity){
         
-        struct QuadNode *children = new QuadNode[4]; 
-        
-        for (int i = 0; i < curr_quad_node_ptr->data_node_count-1; i++){
+        struct QuadNode *children = new QuadNode[4](); // The () ensure the children are default-init to 0.
+        curr_quad_node_ptr->first_child_ptr = children;
+         
+        for (int i = 0; i < curr_quad_node_ptr->data_node_count; i++){
            
             Vector2D elem_pos = get_pos_from_ID(curr_quad_node_ptr->first_node_ptr->ID);
 
             int child_offset = this->find_quad_offset(curr_bl, curr_tr, elem_pos);
-            std::cout << "Child Offset: " << child_offset<< std::endl;
             struct QuadNode *curr_child_node = children + child_offset;
 
             if (curr_child_node->first_node_ptr == nullptr){
@@ -124,13 +127,12 @@ void QuadTree::add_element(int ID, Vector2D pos){
         }
 
         // Update curr_quad_node_ptr to point to the newest entry's appropriate QuadNode
-        int child_offset = this->find_quad_offset(curr_bl, curr_tr, pos);  
+        int child_offset = this->find_quad_offset(curr_bl, curr_tr, pos);       
         curr_quad_node_ptr = children + child_offset;
 
-        std::cout << "Final Child Offset: " << child_offset << std::endl;
     }
 
-    // Add this newest entry
+    // Add the newest entry
     if (curr_quad_node_ptr->first_node_ptr == nullptr){
         struct DataNode *curr_data_node_ptr = new struct DataNode;
         curr_data_node_ptr->next = nullptr;
@@ -145,7 +147,13 @@ void QuadTree::add_element(int ID, Vector2D pos){
         curr_quad_node_ptr->first_node_ptr->next = temp;
         curr_quad_node_ptr->first_node_ptr->ID   = ID;  
     }
-
+    
+    curr_quad_node_ptr->data_node_count++;  
+    if (parent->first_child_ptr != nullptr){
+        for (int i = 0; i < 4; i++){
+            std::cout << "HERE: " << static_cast<int>((parent->first_child_ptr+i)->data_node_count) << std::endl;
+        }
+    }
       
      
 }
