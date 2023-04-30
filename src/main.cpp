@@ -15,6 +15,7 @@
 #include "ComponentStorage.hpp"
 
 #include "Motion.hpp"
+#include "Rectangle.hpp"
 #include "Render.hpp"
 #include "Boundary.hpp"
 #include "Controller.hpp"
@@ -73,9 +74,22 @@ static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree qt){
     my_world.add_component<Motion_Component>(init_mot_val);
     my_world.add_component<Render_Component>(init_render_val); 
     my_world.add_component<Boundary_Component>(init_bounds_val);
-    my_world.add_component<Collision_Component>(init_coll_comp); 
-}
+    my_world.add_component<Collision_Component>(init_coll_comp);
 
+/* 
+    raylib::Image quad_image = raylib::Image(320, 320, raylib::Color(255, 0, 0, 255));;//QuadTree(nullptr, Vector2D(0.0, 0.0), 0);
+    raylib::Rectangle rec(raylib::Vector2(0, 0), raylib::Vector2(0, 0));  
+    quad_image.DrawRectangle(rec, raylib::Color(255, 0, 0, 255)); 
+    raylib::Texture qt_tex(quad_image);
+
+    BeginDrawing();
+    qt_tex.Draw(raylib::Vector2(0.0, 0.0), raylib::Color(255,255,255,255));
+    EndDrawing();
+
+    qt_tex.Unload();
+    quad_image.Unload();
+*/
+}
 
 int main() {
     
@@ -101,9 +115,8 @@ int main() {
     my_world.register_component<Velocity_Component>();
     my_world.register_component<Acceleration_Component>();
 
-    QuadTree my_qt(my_world, Vector2D(0.0, 0.0), Vector2D(4.0, 4.0), 16, 4);  
-
-    // Main game loop
+    QuadTree my_qt(my_world, Vector2D(0.0, 0.0), Vector2D(4.0, 4.0), 16, 4); 
+    raylib::Image *quad_image_ptr; 
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
         
@@ -121,8 +134,17 @@ int main() {
             Boundary_System(my_world); 
         }
 
-        Render_System(my_world);
-        
+        BeginDrawing();
+        ClearBackground(BLACK);
+        // Draws Image files designated by the Render_Component
+        quad_image_ptr = my_qt.drawQuadTree(nullptr, Vector2D(0,0), 0);
+        raylib::Texture qt_tex(*quad_image_ptr); 
+        qt_tex.Draw();        
+        Render_System_NonExclusive(my_world);
+        EndDrawing();
+
+        qt_tex.Unload();
+
     }
 
     return 0;

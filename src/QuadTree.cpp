@@ -1,6 +1,11 @@
 #include "QuadTree.hpp"
 
 #include <cassert>
+#include <cmath>
+
+#include <raylib-cpp.hpp> // Temp for drawing QuadTree
+#include "Render.hpp"
+
 
 #include "ECSManager.hpp"
 #include "Vector2D.hpp"
@@ -31,6 +36,62 @@ QuadTree::QuadTree(ECS_Manager &world, Vector2D bott_left, Vector2D top_right, i
     this->root_node_ptr->first_child_ptr = nullptr;
     this->root_node_ptr->first_node_ptr  = nullptr;
     this->root_node_ptr->data_node_count = 0;
+
+
+    this->background_image = raylib::Image(640, 640, raylib::Color(0, 0, 0, 255));
+
+
+}
+
+raylib::Image *QuadTree::drawQuadTree(QuadNode* quad_node_ptr, Vector2D bott_left, int curr_depth){
+
+    if (quad_node_ptr == nullptr){
+        quad_node_ptr = this->root_node_ptr; 
+        bott_left     = this->bott_left;
+        curr_depth    = 0;
+        this->background_image.Unload();
+        this->background_image = raylib::Image(640, 640, raylib::Color(0, 0, 0, 255));
+    }
+
+    Vector2D root_w_h_vec = this->top_right - this->bott_left; 
+
+    Vector2D w_h_vec = (1/std::pow(2.0, curr_depth)) * root_w_h_vec; 
+     
+    if(quad_node_ptr->first_child_ptr != nullptr){
+        Vector2D curr_bl;  
+        for (int child_offset = 0; child_offset < 4; child_offset++){
+            curr_bl = bott_left;  
+            // Find the bott_left for each tree
+            if (child_offset == 0){
+                curr_bl = curr_bl + 0.5*w_h_vec; 
+            }
+            if (child_offset == 1){
+                curr_bl = curr_bl + Vector2D(0.0, w_h_vec.y/2);
+            }
+            if (child_offset == 2){
+                curr_bl = curr_bl; //i.e. no change
+            }
+            if (child_offset == 3){
+                curr_bl = curr_bl + Vector2D(w_h_vec.x/2, 0.0);
+            }
+            
+            // Draw the children        
+            this->drawQuadTree(quad_node_ptr->first_child_ptr + child_offset, curr_bl, curr_depth+1);
+        }
+ 
+    } 
+    
+    // Draw Current Node
+    int draw_offset = world2screenscale_Y(w_h_vec.y);
+    raylib::Vector2 pos_vec(world2screen_X(bott_left.x), world2screen_Y(bott_left.y) - draw_offset);
+    raylib::Vector2 size_vec(world2screenscale_X(w_h_vec.x), world2screenscale_Y(w_h_vec.y));
+    //raylib::Vector2 size_vec(25, 25);
+    //raylib::Vector2 pos_vec(320, 320);
+    //raylib::Vector2 size_vec(25, 25); 
+    raylib::Rectangle rec(pos_vec, size_vec);
+    this->background_image.DrawRectangleLines(rec, 2, raylib::Color(255, 0, 0, 255));
+
+    return &(this->background_image);
 }
 
 void QuadTree::add_element(int ID, Vector2D pos){

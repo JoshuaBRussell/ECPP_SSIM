@@ -3,7 +3,7 @@
 #include "ECSManager.hpp"
 #include "Vector2D.hpp"
 
-
+#include "Render.hpp"
 struct DataNode {
     int ID;
 
@@ -18,6 +18,7 @@ struct QuadNode {
     //Data Elements
     struct DataNode *first_node_ptr;
     int data_node_count;
+ 
 };
 
 class QuadTree{
@@ -28,7 +29,7 @@ class QuadTree{
     Vector2D bott_left;
     Vector2D top_right;
     
-    QuadNode *root_node_ptr;
+    QuadNode *root_node_ptr; 
 
     int find_quad_offset(Vector2D bott_left, Vector2D top_right, Vector2D pos);
 
@@ -39,5 +40,7 @@ class QuadTree{
     QuadTree(ECS_Manager &world, Vector2D bott_left, Vector2D top_right, int max_depth, int max_node_capacity);
     void add_element(int ID, Vector2D pos);
     int  get_count();
-       
+
+    raylib::Image *drawQuadTree(QuadNode* quad_node_ptr, Vector2D bott_left, int curr_depth);
+    raylib::Image background_image; 
 };
