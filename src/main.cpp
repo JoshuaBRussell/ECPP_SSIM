@@ -38,7 +38,7 @@
 
 #define TOTAL_SUBSTEPS 8
 
-#define TOTAL_OBJECTS 50 
+#define TOTAL_OBJECTS 100 
 
 #define TARGET_FPS 60.0
 
@@ -76,19 +76,6 @@ static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree qt){
     my_world.add_component<Boundary_Component>(init_bounds_val);
     my_world.add_component<Collision_Component>(init_coll_comp);
 
-/* 
-    raylib::Image quad_image = raylib::Image(320, 320, raylib::Color(255, 0, 0, 255));;//QuadTree(nullptr, Vector2D(0.0, 0.0), 0);
-    raylib::Rectangle rec(raylib::Vector2(0, 0), raylib::Vector2(0, 0));  
-    quad_image.DrawRectangle(rec, raylib::Color(255, 0, 0, 255)); 
-    raylib::Texture qt_tex(quad_image);
-
-    BeginDrawing();
-    qt_tex.Draw(raylib::Vector2(0.0, 0.0), raylib::Color(255,255,255,255));
-    EndDrawing();
-
-    qt_tex.Unload();
-    quad_image.Unload();
-*/
 }
 
 int main() {
@@ -129,7 +116,7 @@ int main() {
         // Update
         for (int i = 0; i < 8; i++){
             Controller_System(my_world); 
-            //Motion_System(my_world, TEMP_DT/8); 
+            Motion_System(my_world, TEMP_DT/8); 
             Collision_System(my_world, TEMP_DT/8);  
             Boundary_System(my_world); 
         }
@@ -144,6 +131,8 @@ int main() {
         EndDrawing();
 
         qt_tex.Unload();
+
+        my_qt.update();
 
     }
 

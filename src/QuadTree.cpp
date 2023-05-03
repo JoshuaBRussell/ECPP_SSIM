@@ -1,5 +1,4 @@
 #include "QuadTree.hpp"
-
 #include <cassert>
 #include <cmath>
 
@@ -81,15 +80,17 @@ raylib::Image *QuadTree::drawQuadTree(QuadNode* quad_node_ptr, Vector2D bott_lef
  
     } 
     
-    // Draw Current Node
-    int draw_offset = world2screenscale_Y(w_h_vec.y);
-    raylib::Vector2 pos_vec(world2screen_X(bott_left.x), world2screen_Y(bott_left.y) - draw_offset);
-    raylib::Vector2 size_vec(world2screenscale_X(w_h_vec.x), world2screenscale_Y(w_h_vec.y));
-    //raylib::Vector2 size_vec(25, 25);
-    //raylib::Vector2 pos_vec(320, 320);
-    //raylib::Vector2 size_vec(25, 25); 
-    raylib::Rectangle rec(pos_vec, size_vec);
-    this->background_image.DrawRectangleLines(rec, 2, raylib::Color(255, 0, 0, 255));
+    // Draw Current Node - if it doesn't have children
+    if (quad_node_ptr->first_node_ptr != nullptr){
+        int draw_offset = world2screenscale_Y(w_h_vec.y);
+        raylib::Vector2 pos_vec(world2screen_X(bott_left.x), world2screen_Y(bott_left.y) - draw_offset);
+        raylib::Vector2 size_vec(world2screenscale_X(w_h_vec.x), world2screenscale_Y(w_h_vec.y));
+        //raylib::Vector2 size_vec(25, 25);
+        //raylib::Vector2 pos_vec(320, 320);
+        //raylib::Vector2 size_vec(25, 25); 
+        raylib::Rectangle rec(pos_vec, size_vec);
+        this->background_image.DrawRectangleLines(rec, 2, raylib::Color(255, 0, 0, 255));
+    }
 
     return &(this->background_image);
 }
@@ -219,6 +220,90 @@ void QuadTree::add_element(int ID, Vector2D pos){
      
 }
 
+std::vector<DataNode *> QuadTree::find_invalids(QuadNode* quad_node_ptr, Vector2D bott_left, int curr_depth){
+   
+    std::vector<DataNode *> invalids;
+
+    if(quad_node_ptr->first_child_ptr != nullptr){ 
+        
+        for (int child_offset = 0; child_offset < 4; child_offset++){
+            Vector2D curr_bl = this->find_bott_left(curr_depth, bott_left, child_offset); 
+            std::vector<DataNode *> temp_invalids = this->find_invalids(quad_node_ptr->first_child_ptr + child_offset, curr_bl, curr_depth+1);
+            invalids.insert(std::end(invalids), std::begin(temp_invalids), std::end(temp_invalids));
+        }
+    
+    } else {
+
+        Vector2D root_w_h_vec = this->top_right - this->bott_left; 
+
+        Vector2D w_h_vec = (1/std::pow(2.0, curr_depth)) * root_w_h_vec; 
+        
+        // Find Invalid Elements
+        Vector2D top_right = bott_left + w_h_vec; 
+         
+        if (quad_node_ptr->first_node_ptr != nullptr){
+            
+            // Handle removing from Front
+            Vector2D pos = this->get_pos_from_ID(quad_node_ptr->first_node_ptr->ID);    
+            while(!in_quadrant(bott_left, top_right, pos) && quad_node_ptr->first_node_ptr != nullptr){
+                std::cout << "Found Invalids" << std::endl; 
+                DataNode *temp = quad_node_ptr->first_node_ptr->next;
+                invalids.push_back(quad_node_ptr->first_node_ptr);
+                quad_node_ptr->first_node_ptr = temp;
+
+                quad_node_ptr->data_node_count--;
+        
+                if(quad_node_ptr->first_node_ptr){
+                    pos = this->get_pos_from_ID(quad_node_ptr->first_node_ptr->ID); 
+                } 
+            } 
+            
+            // Handle removing any past the first
+            if (quad_node_ptr->first_node_ptr != nullptr){
+                // First data node already handled w/ above loop
+                DataNode *prev_data_node_ptr = quad_node_ptr->first_node_ptr; 
+                while(prev_data_node_ptr->next != nullptr){
+                    Vector2D pos = this->get_pos_from_ID(prev_data_node_ptr->next->ID); 
+                    if(!in_quadrant(bott_left, top_right, pos)){
+                        std::cout << "Found Invalids" << std::endl;
+                        DataNode *temp = prev_data_node_ptr->next->next;
+                        invalids.push_back(prev_data_node_ptr->next);
+                        quad_node_ptr->data_node_count--;         
+                        // Since the curr node under scrutiny was invalid, the prev_data_node_ptr stays the same
+                        prev_data_node_ptr->next = temp; 
+                    } else{
+                        prev_data_node_ptr = prev_data_node_ptr->next;
+                    }
+                }
+            }
+
+        }  
+
+    }
+    
+    // Handle the rest 
+    
+    return invalids;
+}
+
+void QuadTree::update(){
+    
+    std::vector<DataNode *> invalids = this->find_invalids(this->root_node_ptr, this->bott_left, 0);
+    int id;
+    Vector2D pos;
+    for (int i = 0; i < invalids.size(); i++){
+        
+        // Add the same data back in - this should be changed to NOT allocate/free memory
+        id  = invalids[i]->ID;
+        pos = this->get_pos_from_ID(id);
+        this->add_element(id, pos);
+        
+        // Free Node
+        delete invalids[i];   
+        
+    }
+}
+
 int  QuadTree::get_count(){
     return this->root_node_ptr->data_node_count;
 }
@@ -256,6 +341,32 @@ int QuadTree::find_quad_offset(Vector2D bott_left, Vector2D top_right, Vector2D 
 
 }
 
+Vector2D QuadTree::find_bott_left(int curr_depth, Vector2D bott_left, int child_offset){
+    Vector2D root_w_h_vec = this->top_right - this->bott_left; 
+
+    Vector2D w_h_vec = (1/std::pow(2.0, curr_depth)) * root_w_h_vec;
+
+    Vector2D curr_bl = bott_left;  
+
+    // Find the bott_left for each tree
+    if (child_offset == 0){
+        curr_bl = curr_bl + 0.5*w_h_vec; 
+    }
+    if (child_offset == 1){
+        curr_bl = curr_bl + Vector2D(0.0, w_h_vec.y/2);
+    }
+    if (child_offset == 2){
+        curr_bl = curr_bl; //i.e. no change
+    }
+    if (child_offset == 3){
+        curr_bl = curr_bl + Vector2D(w_h_vec.x/2, 0.0);
+    } 
+
+    return curr_bl;
+}
+
 Vector2D QuadTree::get_pos_from_ID(int ID){
    return this->world.get_component<Position_Component>(ID)->position;     
 }
+
+
