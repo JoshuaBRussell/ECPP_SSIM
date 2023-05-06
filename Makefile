@@ -59,7 +59,7 @@ endif
 .PHONY: all setup submodules execute clean
 
 # Default target, compiles, executes and cleans
-all: $(target) execute clean
+all: $(target) execute #clean
 
 # Sets up the project for compiling, generates includes and libs
 setup: include lib
