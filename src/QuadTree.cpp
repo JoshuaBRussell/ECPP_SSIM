@@ -304,6 +304,32 @@ std::vector<DataNode *> QuadTree::find_and_remove_invalids(QuadNode* quad_node_p
     return invalids;
 }
 
+
+static void checkNodeCount(struct QuadNode* quad_node)
+{
+    if (quad_node == NULL)
+        return;
+ 
+    if (quad_node->first_child_ptr != nullptr){
+        checkNodeCount(quad_node->first_child_ptr + 0);
+        checkNodeCount(quad_node->first_child_ptr + 1);
+        checkNodeCount(quad_node->first_child_ptr + 2);
+        checkNodeCount(quad_node->first_child_ptr + 3); 
+    
+        // Check the parent adds to the children
+        int children_sum = 0;
+        for (int i = 0; i < 4; i++){
+            struct QuadNode *curr_child_ptr = quad_node->first_child_ptr + i;
+            children_sum += curr_child_ptr->data_node_count;
+        }
+
+        assert(quad_node->data_node_count == children_sum);
+
+        std::cout << "P Sum: " << quad_node->data_node_count << std::endl;
+        std::cout << "C Sum: " << children_sum << std::endl;
+    }
+}
+
 void QuadTree::update(){
     
     std::vector<DataNode *> invalids = this->find_and_remove_invalids(this->root_node_ptr, this->bott_left, 0);
@@ -325,6 +351,9 @@ void QuadTree::update(){
 
     // Delete any nodes that are still empty
     this->cleanup();
+
+    // Double Check QuadNodes Count
+    checkNodeCount(this->root_node_ptr);
     
 
 }
