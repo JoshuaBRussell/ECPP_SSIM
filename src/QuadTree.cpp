@@ -93,6 +93,13 @@ raylib::Image *QuadTree::drawQuadTree(QuadNode* quad_node_ptr, Vector2D bott_lef
         //raylib::Vector2 size_vec(25, 25); 
         raylib::Rectangle rec(pos_vec, size_vec);
         this->background_image.DrawRectangleLines(rec, 2, raylib::Color(255, 0, 0, 255));
+        
+        raylib::Vector2 count_offset_vec(world2screenscale_X(0.5*w_h_vec.x), world2screenscale_Y(0.5*w_h_vec.y));
+        raylib::Vector2 obj_pos = pos_vec + count_offset_vec;
+        this->background_image.DrawText(std::to_string(quad_node_ptr->data_node_count),
+                                        obj_pos, 16.0, raylib::Color(255, 255, 255, 255));
+
+
     //}
 
     return &(this->background_image);
