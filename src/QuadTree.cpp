@@ -202,6 +202,8 @@ void QuadTree::add_element(int ID, Vector2D pos){
             curr_child_node->data_node_count++;
         }
 
+        parent->data_node_count++;
+
         // Update curr_quad_node_ptr to point to the newest entry's appropriate QuadNode
         int child_offset = this->find_quad_offset(curr_bl, curr_tr, pos);       
         curr_quad_node_ptr = children + child_offset;
@@ -244,6 +246,8 @@ std::vector<DataNode *> QuadTree::find_and_remove_invalids(QuadNode* quad_node_p
             Vector2D curr_bl = this->find_bott_left(curr_depth, bott_left, child_offset); 
             std::vector<DataNode *> temp_invalids = this->find_and_remove_invalids(quad_node_ptr->first_child_ptr + child_offset, curr_bl, curr_depth+1);
             invalids.insert(std::end(invalids), std::begin(temp_invalids), std::end(temp_invalids));
+
+            quad_node_ptr->data_node_count -= temp_invalids.size();
         }
     
     } else {
