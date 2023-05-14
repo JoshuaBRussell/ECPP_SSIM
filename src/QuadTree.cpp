@@ -1,6 +1,7 @@
 #include "QuadTree.hpp"
 #include <cassert>
 #include <cmath>
+#include <stack>
 
 #include <raylib-cpp.hpp> // Temp for drawing QuadTree
 #include "Render.hpp"
@@ -81,7 +82,9 @@ raylib::Image *QuadTree::drawQuadTree(QuadNode* quad_node_ptr, Vector2D bott_lef
     } 
     
     // Draw Current Node - if it doesn't have children
-    if (quad_node_ptr->first_node_ptr != nullptr){
+    // Removing the conditional causes the code to draw the QuadNodes
+    // even if they are empty
+    //if (quad_node_ptr->first_node_ptr != nullptr){
         int draw_offset = world2screenscale_Y(w_h_vec.y);
         raylib::Vector2 pos_vec(world2screen_X(bott_left.x), world2screen_Y(bott_left.y) - draw_offset);
         raylib::Vector2 size_vec(world2screenscale_X(w_h_vec.x), world2screenscale_Y(w_h_vec.y));
@@ -90,7 +93,7 @@ raylib::Image *QuadTree::drawQuadTree(QuadNode* quad_node_ptr, Vector2D bott_lef
         //raylib::Vector2 size_vec(25, 25); 
         raylib::Rectangle rec(pos_vec, size_vec);
         this->background_image.DrawRectangleLines(rec, 2, raylib::Color(255, 0, 0, 255));
-    }
+    //}
 
     return &(this->background_image);
 }
@@ -157,6 +160,10 @@ void QuadTree::add_element(int ID, Vector2D pos){
         curr_quad_node_ptr->first_child_ptr = children;
          
         for (int i = 0; i < curr_quad_node_ptr->data_node_count; i++){
+
+            if(curr_quad_node_ptr->first_node_ptr == nullptr){
+                std::cout << "Debug Break Point" << std::endl;
+            }
            
             Vector2D elem_pos = get_pos_from_ID(curr_quad_node_ptr->first_node_ptr->ID);
 
@@ -220,7 +227,7 @@ void QuadTree::add_element(int ID, Vector2D pos){
      
 }
 
-std::vector<DataNode *> QuadTree::find_invalids(QuadNode* quad_node_ptr, Vector2D bott_left, int curr_depth){
+std::vector<DataNode *> QuadTree::find_and_remove_invalids(QuadNode* quad_node_ptr, Vector2D bott_left, int curr_depth){
    
     std::vector<DataNode *> invalids;
 
@@ -228,7 +235,7 @@ std::vector<DataNode *> QuadTree::find_invalids(QuadNode* quad_node_ptr, Vector2
         
         for (int child_offset = 0; child_offset < 4; child_offset++){
             Vector2D curr_bl = this->find_bott_left(curr_depth, bott_left, child_offset); 
-            std::vector<DataNode *> temp_invalids = this->find_invalids(quad_node_ptr->first_child_ptr + child_offset, curr_bl, curr_depth+1);
+            std::vector<DataNode *> temp_invalids = this->find_and_remove_invalids(quad_node_ptr->first_child_ptr + child_offset, curr_bl, curr_depth+1);
             invalids.insert(std::end(invalids), std::begin(temp_invalids), std::end(temp_invalids));
         }
     
@@ -288,7 +295,9 @@ std::vector<DataNode *> QuadTree::find_invalids(QuadNode* quad_node_ptr, Vector2
 
 void QuadTree::update(){
     
-    std::vector<DataNode *> invalids = this->find_invalids(this->root_node_ptr, this->bott_left, 0);
+    std::vector<DataNode *> invalids = this->find_and_remove_invalids(this->root_node_ptr, this->bott_left, 0);
+    
+    // Place the invalids back in the tree
     int id;
     Vector2D pos;
     for (int i = 0; i < invalids.size(); i++){
@@ -302,6 +311,11 @@ void QuadTree::update(){
         delete invalids[i];   
         
     }
+
+    // Delete any nodes that are still empty
+    this->cleanup();
+    
+
 }
 
 int  QuadTree::get_count(){
@@ -309,6 +323,44 @@ int  QuadTree::get_count(){
 }
 
 // ---- Private ---- //
+bool QuadTree::is_empty_leaf(struct QuadNode *node){
+    return node->first_child_ptr == nullptr && node->first_node_ptr == nullptr;
+}
+
+void QuadTree::cleanup(){
+
+    std::stack<struct QuadNode *> node_stack;
+    
+    // special check for root_node_ptr
+    if (this->root_node_ptr->first_child_ptr != nullptr){
+        node_stack.push(this->root_node_ptr); 
+    }
+
+    while (node_stack.size() > 0){
+        
+        struct QuadNode *curr_parent_node = node_stack.top(); 
+        node_stack.pop();
+
+        // Check to make sure each of the children are empty leaves
+        int empty_leaf_count = 0;
+        for (int i = 0; i < 4; i ++){
+            struct QuadNode *curr_child_node = curr_parent_node->first_child_ptr + i; 
+            
+            if (is_empty_leaf(curr_child_node)){
+                empty_leaf_count++; 
+            }
+            
+            if (curr_child_node->first_child_ptr != nullptr){
+                node_stack.push(curr_child_node); 
+            } 
+        }
+
+        if (empty_leaf_count == 4){
+            delete  curr_parent_node->first_child_ptr;
+            curr_parent_node->first_child_ptr = nullptr;
+        }
+    }
+}
 
 // Quadrant Tree 
 //----|----//

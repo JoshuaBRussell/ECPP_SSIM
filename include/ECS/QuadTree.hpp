@@ -36,8 +36,9 @@ class QuadTree{
 
     Vector2D get_pos_from_ID(int ID);
 
-    std::vector<DataNode *> find_invalids(QuadNode* quad_node_ptr, Vector2D bott_left, int curr_depth);
-
+    std::vector<DataNode *> find_and_remove_invalids(QuadNode* quad_node_ptr, Vector2D bott_left, int curr_depth);
+    bool is_empty_leaf(struct QuadNode *node); 
+    void cleanup();
 
   public:
     
