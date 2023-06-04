@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cmath>
 #include <stack>
+#include <unordered_set>
 
 #include <raylib-cpp.hpp> // Temp for drawing QuadTree
 #include "Render.hpp"
@@ -21,7 +22,6 @@ static bool in_quadrant(Vector2D bott_left, Vector2D top_right, Vector2D pos){
     
     return in_y_bounds && in_x_bounds;
 }
-
 
 QuadTree::QuadTree(ECS_Manager &world, Vector2D bott_left, Vector2D top_right, int max_depth, int max_node_capacity){
     
@@ -206,71 +206,6 @@ void QuadTree::add_element(int ID, Vector2D pos){
     }             
 }
 
-    if(quad_node_ptr->first_child_ptr != nullptr){ 
-        
-        for (int child_offset = 0; child_offset < 4; child_offset++){
-            Vector2D curr_bl = this->find_bott_left(curr_depth, bott_left, child_offset); 
-            std::vector<DataNode *> temp_invalids = this->find_and_remove_invalids(quad_node_ptr->first_child_ptr + child_offset, curr_bl, curr_depth+1);
-            invalids.insert(std::end(invalids), std::begin(temp_invalids), std::end(temp_invalids));
-
-            quad_node_ptr->data_node_count -= temp_invalids.size();
-        }
-    
-    } else {
-
-        Vector2D root_w_h_vec = this->top_right - this->bott_left; 
-
-        Vector2D w_h_vec = (1/std::pow(2.0, curr_depth)) * root_w_h_vec; 
-        
-        // Find Invalid Elements
-        Vector2D top_right = bott_left + w_h_vec; 
-         
-        if (quad_node_ptr->first_node_ptr != nullptr){
-            
-            // Handle removing from Front
-            Vector2D pos = this->get_pos_from_ID(quad_node_ptr->first_node_ptr->ID);    
-            while(!in_quadrant(bott_left, top_right, pos) && quad_node_ptr->first_node_ptr != nullptr){
-                std::cout << "Found Invalids" << std::endl; 
-                DataNode *temp = quad_node_ptr->first_node_ptr->next;
-                invalids.push_back(quad_node_ptr->first_node_ptr);
-                quad_node_ptr->first_node_ptr = temp;
-
-                quad_node_ptr->data_node_count--;
-        
-                if(quad_node_ptr->first_node_ptr){
-                    pos = this->get_pos_from_ID(quad_node_ptr->first_node_ptr->ID); 
-                } 
-            } 
-            
-            // Handle removing any past the first
-            if (quad_node_ptr->first_node_ptr != nullptr){
-                // First data node already handled w/ above loop
-                DataNode *prev_data_node_ptr = quad_node_ptr->first_node_ptr; 
-                while(prev_data_node_ptr->next != nullptr){
-                    Vector2D pos = this->get_pos_from_ID(prev_data_node_ptr->next->ID); 
-                    if(!in_quadrant(bott_left, top_right, pos)){
-                        std::cout << "Found Invalids" << std::endl;
-                        DataNode *temp = prev_data_node_ptr->next->next;
-                        invalids.push_back(prev_data_node_ptr->next);
-                        quad_node_ptr->data_node_count--;         
-                        // Since the curr node under scrutiny was invalid, the prev_data_node_ptr stays the same
-                        prev_data_node_ptr->next = temp; 
-                    } else{
-                        prev_data_node_ptr = prev_data_node_ptr->next;
-                    }
-                }
-            }
-
-        }  
-
-    }
-    
-    // Handle the rest 
-    
-    return invalids;
-}
-
-
 static void checkNodeCount(struct QuadNode* quad_node)
 {
     if (quad_node == NULL)
@@ -296,31 +231,108 @@ static void checkNodeCount(struct QuadNode* quad_node)
     }
 }
 
-void QuadTree::update(){
+std::unordered_set<int> QuadTree::remove_all_elements(){
+
+    std::unordered_set<int> removed_ID_set;
+
+    std::stack<struct QuadNodeInfo> quad_info_stack;
+
+    struct QuadNodeInfo qn_info = {
+        this->root_node_ptr,
+        this->bott_left,
+        this->top_right
+    };
     
-    std::vector<DataNode *> invalids = this->find_and_remove_invalids(this->root_node_ptr, this->bott_left, 0);
-    
-    // Place the invalids back in the tree
-    int id;
-    Vector2D pos;
-    for (int i = 0; i < invalids.size(); i++){
+    quad_info_stack.push(qn_info);
+
+    while(quad_info_stack.size() > 0){
         
-        // Add the same data back in - this should be changed to NOT allocate/free memory
-        id  = invalids[i]->ID;
-        pos = this->get_pos_from_ID(id);
-        this->add_element(id, pos);
+        // Get top of stack
+        // Pop it - to actually remove it
+        struct QuadNodeInfo curr_node_info = quad_info_stack.top(); 
+        quad_info_stack.pop(); 
+
+        // If it's not a leaf
+        if(curr_node_info.quad_node_ptr->first_child_ptr != nullptr){ 
+            
+            curr_node_info.quad_node_ptr->data_node_count = 0; // Go ahead and set its count back to zero
+            
+            // Go through its children. 
+            // add it to the stack to be processed 
+            for (int child_offset = 0; child_offset < 4; child_offset++){
+                
+                struct QuadNode * curr_child_ptr = curr_node_info.quad_node_ptr->first_child_ptr + child_offset;
+
+                Vector2D w_h_vec = curr_node_info.curr_tr - curr_node_info.curr_bl; 
+                // Find child_bott_left
+                Vector2D child_bott_left; 
+
+                if (child_offset == 0){
+                    child_bott_left = curr_node_info.curr_bl + 0.5*w_h_vec; 
+                }
+                if (child_offset == 1){
+                    child_bott_left = curr_node_info.curr_bl + Vector2D(0.0, w_h_vec.y/2);
+                }
+                if (child_offset == 2){
+                    child_bott_left = curr_node_info.curr_bl; //i.e. no change
+                }
+                if (child_offset == 3){
+                    child_bott_left = curr_node_info.curr_bl + Vector2D(w_h_vec.x/2, 0.0);
+                }
+
+                Vector2D child_top_right = child_bott_left + 0.5*w_h_vec;
+
+                // Add to the stack to be processed 
+                struct QuadNodeInfo qn_info = {
+                    curr_child_ptr,
+                    child_bott_left,
+                    child_top_right
+                };
+                quad_info_stack.push(qn_info);                 
+                 
+            } 
         
-        // Free Node
-        delete invalids[i];   
-        
+        // It is a leaf, all data elements need to be removed
+        } else {
+            
+            struct QuadNode *curr_quad_node = curr_node_info.quad_node_ptr;
+            // Delete the parent's data nodes
+            struct DataNode *curr_data_node_ptr = curr_quad_node->first_node_ptr; 
+            while(curr_data_node_ptr != nullptr){
+                
+                removed_ID_set.insert(curr_data_node_ptr->ID);
+                
+                struct DataNode *temp_ptr = curr_data_node_ptr;
+                curr_data_node_ptr = curr_data_node_ptr->next;
+                delete temp_ptr;
+                temp_ptr = nullptr;
+
+                curr_quad_node->data_node_count--;
+            }
+            
+            assert(curr_quad_node->data_node_count == 0);
+            curr_quad_node->first_node_ptr = nullptr;
+        }
     }
 
-    // Delete any nodes that are still empty
-    this->cleanup();
+    return removed_ID_set;
+}
 
-    // Double Check QuadNodes Count
-    checkNodeCount(this->root_node_ptr);
+void QuadTree::readd_all_elements(){
+    std::unordered_set<int> element_ID_set = this->remove_all_elements();
     
+    std::unordered_set<int>::iterator it;
+    for (it = element_ID_set.begin(); it != element_ID_set.end(); ++it){
+        this->add_element(*it, this->get_pos_from_ID(*it));
+    }
+}
+
+void QuadTree::update(){
+
+    this->readd_all_elements();
+    
+    // Delete any nodes that are empty
+    this->cleanup();
 
 }
 
@@ -474,14 +486,14 @@ void QuadTree::split_and_distribute(struct QuadNodeInfo curr_node_info){
     }
 
     // Delete the parent's data nodes
-    /*curr_data_node_ptr = node->first_node_ptr; 
+    curr_data_node_ptr = node->first_node_ptr; 
     while(curr_data_node_ptr != nullptr){
         struct DataNode *temp_ptr = curr_data_node_ptr;
         curr_data_node_ptr = curr_data_node_ptr->next;
         delete temp_ptr;
         temp_ptr = nullptr;
     }
-    */ 
+     
     node->first_node_ptr = nullptr;
 }
 

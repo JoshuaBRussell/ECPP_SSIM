@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_set>
+
 #include "ECSManager.hpp"
 #include "Vector2D.hpp"
 
@@ -35,7 +37,8 @@ class QuadTree{
     Vector2D find_bott_left(int curr_depth, Vector2D bott_left, int child_offset);
     bool is_in_region(Vector2D pos, double radius, Vector2D child_bott_left, Vector2D child_top_right);   
 
-    int find_and_remove_invalids(QuadNode* quad_node_ptr, Vector2D bott_left, int curr_depth);
+    std::unordered_set<int> remove_all_elements();
+    void readd_all_elements();
     bool is_empty_leaf(struct QuadNode *node); 
     void cleanup();
     
