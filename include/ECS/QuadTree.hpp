@@ -33,12 +33,17 @@ class QuadTree{
 
     int find_quad_offset(Vector2D bott_left, Vector2D top_right, Vector2D pos);
     Vector2D find_bott_left(int curr_depth, Vector2D bott_left, int child_offset);
+    bool is_in_region(Vector2D pos, double radius, Vector2D child_bott_left, Vector2D child_top_right);   
 
-    Vector2D get_pos_from_ID(int ID);
-
-    std::vector<DataNode *> find_and_remove_invalids(QuadNode* quad_node_ptr, Vector2D bott_left, int curr_depth);
+    int find_and_remove_invalids(QuadNode* quad_node_ptr, Vector2D bott_left, int curr_depth);
     bool is_empty_leaf(struct QuadNode *node); 
     void cleanup();
+    
+    void add_element_to_node(struct QuadNode *quad_node_ptr, struct DataNode *data_node_ptr);
+    void split_and_distribute(struct QuadNodeInfo curr_node_info);
+
+    Vector2D get_pos_from_ID(int ID);
+    double get_coll_radius_from_ID(int ID);
 
   public:
     

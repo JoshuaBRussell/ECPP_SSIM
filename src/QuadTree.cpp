@@ -11,6 +11,7 @@
 #include "Vector2D.hpp"
 
 #include "./components/Position_comp.hpp"
+#include "./components/Collision_comp.hpp"
 
 static bool in_quadrant(Vector2D bott_left, Vector2D top_right, Vector2D pos){
         
@@ -105,140 +106,105 @@ raylib::Image *QuadTree::drawQuadTree(QuadNode* quad_node_ptr, Vector2D bott_lef
     return &(this->background_image);
 }
 
+struct QuadNodeInfo {
+
+    struct QuadNode *quad_node_ptr;
+    Vector2D curr_bl;
+    Vector2D curr_tr;
+
+};
+
 void QuadTree::add_element(int ID, Vector2D pos){
     
     // Add check to make sure this is even in the correct location
     assert(in_quadrant(this->bott_left, this->top_right, pos));
 
-    int curr_depth = 0; 
-    Vector2D curr_bl = this->bott_left;
-    Vector2D curr_tr = this->top_right;
-    QuadNode *curr_quad_node_ptr = this->root_node_ptr;
-    
-    // If the child has a non-null first_child_ptr, it must have children.
-    // Find out which child to place into
-    while(curr_depth <= this->max_depth && curr_quad_node_ptr->first_child_ptr != nullptr){
+    // Get collision radius - assumes circular shaped object
+    double radius = this->get_coll_radius_from_ID(ID);
+
+    std::stack<struct QuadNodeInfo> quad_info_stack;
+
+    struct QuadNodeInfo qn_info = {
+        this->root_node_ptr,
+        this->bott_left,
+        this->top_right
+    };
+    quad_info_stack.push(qn_info);
+
+    while(quad_info_stack.size() > 0){
         
-        // This could also be found using the curr_depth variable: (1/2^N) * (root_width, root_height)
-        // Where N is the curent depth.
-        // This would be useful if there is a way to get rid of using the curr_br/curr_tl vars
-        Vector2D w_h_vec = curr_tr - curr_bl; // Width in X Coord. Height in Y Coord. 
-        // Find out what child to traverse next 
-        int child_offset = find_quad_offset(curr_bl, curr_tr, pos); 
+        // Get top of stack
+        // Pop it - to actually remove it
+        struct QuadNodeInfo curr_node_info = quad_info_stack.top(); 
+        quad_info_stack.pop();
+
+        // Check if there needs to be a split here
+
+        // It holds some portion of the element - else it wouldn't have been added
+        // increment its count 
+        curr_node_info.quad_node_ptr->data_node_count++;
+
+        // If it's not a leaf, find out which of its children need be added to the stack 
+        if(curr_node_info.quad_node_ptr->first_child_ptr != nullptr){ 
         
-        // Find new bott_left
-        if (child_offset == 0){
-            curr_bl = curr_bl + 0.5*w_h_vec; 
-        }
-        if (child_offset == 1){
-            curr_bl = curr_bl + Vector2D(0.0, w_h_vec.y/2);
-        }
-        if (child_offset == 2){
-            curr_bl = curr_bl; //i.e. no change
-        }
-        if (child_offset == 3){
-            curr_bl = curr_bl + Vector2D(w_h_vec.x/2, 0.0);
+            // Go through any of its children. 
+            // If any contain a region of the object,
+            // add it to the stack to be processed 
+            for (int child_offset = 0; child_offset < 4; child_offset++){
+                
+                struct QuadNode * curr_child_ptr = curr_node_info.quad_node_ptr->first_child_ptr + child_offset;
+
+                Vector2D w_h_vec = curr_node_info.curr_tr - curr_node_info.curr_bl; 
+                // Find child_bott_left
+                Vector2D child_bott_left; 
+
+                if (child_offset == 0){
+                    child_bott_left = curr_node_info.curr_bl + 0.5*w_h_vec; 
+                }
+                if (child_offset == 1){
+                    child_bott_left = curr_node_info.curr_bl + Vector2D(0.0, w_h_vec.y/2);
+                }
+                if (child_offset == 2){
+                    child_bott_left = curr_node_info.curr_bl; //i.e. no change
+                }
+                if (child_offset == 3){
+                    child_bott_left = curr_node_info.curr_bl + Vector2D(w_h_vec.x/2, 0.0);
+                }
+
+                Vector2D child_top_right = child_bott_left + 0.5*w_h_vec;
+
+                // Add to the stack to be processed 
+                if(is_in_region(pos, radius, child_bott_left, child_top_right)){
+                    struct QuadNodeInfo qn_info = {
+                        curr_child_ptr,
+                        child_bott_left,
+                        child_top_right
+                    };
+                    quad_info_stack.push(qn_info);                 
+                } 
+            } 
+
+
+        
+        } else {
+             
+            struct QuadNode *curr_quad_node = curr_node_info.quad_node_ptr;  
+            // Add element
+            struct DataNode *curr_data_node_ptr = new struct DataNode;
+            curr_data_node_ptr->next = nullptr;
+            curr_data_node_ptr->ID   = ID;
+            
+            // data_node_count for this node is incremented above
+            this->add_element_to_node(curr_quad_node, curr_data_node_ptr);
+            
+            // If needed, split the leaf into a parent
+            if(curr_quad_node->data_node_count > this->max_node_capacity){
+                this->split_and_distribute(curr_node_info);
+            }
         } 
-        
-        // Find new top_right
-        curr_tr = curr_bl + 0.5 * w_h_vec;
 
-        // Add check to make sure this is even in the correct location
-        assert(in_quadrant(curr_bl, curr_tr, pos));
-
-        // Increment the parent's count since its children will get it too.
-        // This currently doesn't assume there whill be any type of non-crashable behavior.
-        // So either a child succesfully adds the new element - or it doesn't and the program
-        // crashes, so there is no need to account for this. 
-        curr_quad_node_ptr->data_node_count++; 
-
-        curr_quad_node_ptr = curr_quad_node_ptr->first_child_ptr + child_offset;    
-        curr_depth++; 
-
-        std::cout << curr_depth << std::endl;
-    }
-     
-    struct QuadNode *parent = curr_quad_node_ptr; 
-    // Decide if it needs to split - if so, distribute current elements amongst the children
-    // data_node_count was incremented above 
-    if (curr_quad_node_ptr->data_node_count >= this->max_node_capacity){
-        
-        struct QuadNode *children = new QuadNode[4](); // The () ensure the children are default-init to 0.
-        curr_quad_node_ptr->first_child_ptr = children;
-         
-        for (int i = 0; i < curr_quad_node_ptr->data_node_count; i++){
-
-            if(curr_quad_node_ptr->first_node_ptr == nullptr){
-                std::cout << "Debug Break Point" << std::endl;
-            }
-           
-            Vector2D elem_pos = get_pos_from_ID(curr_quad_node_ptr->first_node_ptr->ID);
-
-            int child_offset = this->find_quad_offset(curr_bl, curr_tr, elem_pos);
-            struct QuadNode *curr_child_node = children + child_offset;
-
-            if (curr_child_node->first_node_ptr == nullptr){
-                curr_child_node->first_node_ptr = curr_quad_node_ptr->first_node_ptr;
-                
-                // After the node at the top of the curr_quad node is pointed to by a child,
-                // have the parent node point to its next child.
-                // This should never cause an issue since this is done at a splitting point. 
-                curr_quad_node_ptr->first_node_ptr = curr_quad_node_ptr->first_node_ptr->next; 
-               
-                curr_child_node->first_node_ptr->next = nullptr;
-            
-            } else {
-                struct DataNode *temp = curr_child_node->first_node_ptr;
-                curr_child_node->first_node_ptr = curr_quad_node_ptr->first_node_ptr;
-                
-                // After the node at the top of the curr_quad node is pointed to by a child,
-                // have the parent node point to its next child.
-                // This should never cause an issue since this is done at a splitting point. 
-                curr_quad_node_ptr->first_node_ptr = curr_quad_node_ptr->first_node_ptr->next; 
-                
-                curr_child_node->first_node_ptr->next = temp;
-            }
-            
-            curr_child_node->data_node_count++;
-        }
-
-        parent->data_node_count++;
-
-        // Update curr_quad_node_ptr to point to the newest entry's appropriate QuadNode
-        int child_offset = this->find_quad_offset(curr_bl, curr_tr, pos);       
-        curr_quad_node_ptr = children + child_offset;
-
-    }
-
-    // Add the newest entry
-    if (curr_quad_node_ptr->first_node_ptr == nullptr){
-        struct DataNode *curr_data_node_ptr = new struct DataNode;
-        curr_data_node_ptr->next = nullptr;
-        curr_data_node_ptr->ID   = ID; 
-
-        curr_quad_node_ptr->first_node_ptr = curr_data_node_ptr; 
-         
-    } else {
-        struct DataNode *temp = curr_quad_node_ptr->first_node_ptr;
-     
-        curr_quad_node_ptr->first_node_ptr = new struct DataNode; 
-        curr_quad_node_ptr->first_node_ptr->next = temp;
-        curr_quad_node_ptr->first_node_ptr->ID   = ID;  
-    }
-    
-    curr_quad_node_ptr->data_node_count++;  
-    if (parent->first_child_ptr != nullptr){
-        for (int i = 0; i < 4; i++){
-            std::cout << "HERE: " << static_cast<int>((parent->first_child_ptr+i)->data_node_count) << std::endl;
-        }
-    }
-      
-     
+    }             
 }
-
-std::vector<DataNode *> QuadTree::find_and_remove_invalids(QuadNode* quad_node_ptr, Vector2D bott_left, int curr_depth){
-   
-    std::vector<DataNode *> invalids;
 
     if(quad_node_ptr->first_child_ptr != nullptr){ 
         
@@ -433,6 +399,92 @@ int QuadTree::find_quad_offset(Vector2D bott_left, Vector2D top_right, Vector2D 
 
 }
 
+// Assumes non-null pointers for the respective nodes.
+// And that the data is already placed in the data_node
+// The data_node_count data member must be incremented by the callee 
+void QuadTree::add_element_to_node(struct QuadNode *quad_node_ptr, 
+                                   struct DataNode *data_node_ptr){
+    if(quad_node_ptr->first_node_ptr == nullptr){ 
+
+        quad_node_ptr->first_node_ptr = data_node_ptr;
+    
+    } else {
+
+        struct DataNode *temp_ptr = quad_node_ptr->first_node_ptr;
+
+        quad_node_ptr->first_node_ptr = data_node_ptr;
+        quad_node_ptr->first_node_ptr->next = temp_ptr;
+
+    }
+}
+
+void QuadTree::split_and_distribute(struct QuadNodeInfo curr_node_info){
+   
+    struct QuadNode *node = curr_node_info.quad_node_ptr;
+    Vector2D node_bl      = curr_node_info.curr_bl;
+    Vector2D node_tr      = curr_node_info.curr_tr;
+    Vector2D w_h_vec      = node_tr - node_bl;
+
+    struct QuadNode *children = new QuadNode[4](); // The () ensure the children are default-init to 0.
+    node->first_child_ptr = children;
+
+    // Loop through each data_node  
+    struct DataNode *curr_data_node_ptr = node->first_node_ptr;
+    while(curr_data_node_ptr != nullptr){ 
+
+        Vector2D pos    = this->get_pos_from_ID(curr_data_node_ptr->ID);
+        double radius   = this->get_coll_radius_from_ID(curr_data_node_ptr->ID);
+        
+        // Since a data node element can inhabit multiple nodes, 
+        // we loop through all children seeing if a data node 
+        // inhabits any of them 
+        for(int child_index = 0; child_index < 4; child_index++){
+            
+            Vector2D child_bl; 
+            // Find the bott_left for each tree
+            if (child_index == 0){
+                child_bl = node_bl + 0.5*w_h_vec; 
+            }
+            if (child_index == 1){
+                child_bl = node_bl + Vector2D(0.0, w_h_vec.y/2);
+            }
+            if (child_index == 2){
+                child_bl = node_bl; //i.e. no change
+            }
+            if (child_index == 3){
+                child_bl = node_bl + Vector2D(w_h_vec.x/2, 0.0);
+            }
+
+            Vector2D child_tr = child_bl + 0.5*w_h_vec; 
+            
+            if (this->is_in_region(pos, radius, child_bl, child_tr)){
+
+                // Create a new data node element to then add to the child
+                struct DataNode *child_data_node_ptr = new struct DataNode;
+                child_data_node_ptr->ID   = curr_data_node_ptr->ID;
+                child_data_node_ptr->next = nullptr; // Just to be safe
+
+
+                (node->first_child_ptr + child_index)->data_node_count++;
+                this->add_element_to_node((node->first_child_ptr + child_index), child_data_node_ptr);
+            } 
+
+        }
+        curr_data_node_ptr = curr_data_node_ptr->next; 
+    }
+
+    // Delete the parent's data nodes
+    /*curr_data_node_ptr = node->first_node_ptr; 
+    while(curr_data_node_ptr != nullptr){
+        struct DataNode *temp_ptr = curr_data_node_ptr;
+        curr_data_node_ptr = curr_data_node_ptr->next;
+        delete temp_ptr;
+        temp_ptr = nullptr;
+    }
+    */ 
+    node->first_node_ptr = nullptr;
+}
+
 Vector2D QuadTree::find_bott_left(int curr_depth, Vector2D bott_left, int child_offset){
     Vector2D root_w_h_vec = this->top_right - this->bott_left; 
 
@@ -455,6 +507,12 @@ Vector2D QuadTree::find_bott_left(int curr_depth, Vector2D bott_left, int child_
     } 
 
     return curr_bl;
+}
+
+bool QuadTree::is_in_region(Vector2D pos, double radius, Vector2D bott_left, Vector2D top_right){
+
+    return ((pos.x > (bott_left.x - radius)) && (pos.x < (top_right.x + radius))) && \
+           ((pos.y > (bott_left.y - radius)) && (pos.y < (top_right.y + radius)));
 }
 
 Vector2D QuadTree::get_pos_from_ID(int ID){
