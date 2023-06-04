@@ -516,7 +516,19 @@ bool QuadTree::is_in_region(Vector2D pos, double radius, Vector2D bott_left, Vec
 }
 
 Vector2D QuadTree::get_pos_from_ID(int ID){
-   return this->world.get_component<Position_Component>(ID)->position;     
+    
+    Position_Component *pos_comp_ptr = this->world.get_component<Position_Component>(ID);
+    assert(pos_comp_ptr != nullptr);
+    return pos_comp_ptr->position;     
+
+}
+
+double QuadTree::get_coll_radius_from_ID(int ID){
+
+    Collision_Component *coll_comp_ptr = this->world.get_component<Collision_Component>(ID);
+    assert(coll_comp_ptr != nullptr);
+    return coll_comp_ptr->radius;
+
 }
 
 
