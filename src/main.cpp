@@ -49,8 +49,7 @@
 
 static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree qt){
     
-    int entity_id = my_world.create_entity();
-    qt.add_element(entity_id, pos);
+    int entity_id = my_world.create_entity();      
     
     PositionZ1_Component init_posz1_val = {entity_id, pos};
     Position_Component init_pos_val     = {entity_id, pos};
@@ -76,6 +75,7 @@ static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree qt){
     my_world.add_component<Boundary_Component>(init_bounds_val);
     my_world.add_component<Collision_Component>(init_coll_comp);
 
+    qt.add_element(entity_id, pos); 
 }
 
 int main() {
