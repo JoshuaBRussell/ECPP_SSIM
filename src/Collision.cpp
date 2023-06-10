@@ -101,5 +101,5 @@ void Collision_System_QT(ECS_Manager &world, double dt, QuadTree &qt){
 
     }
 
-    qt.update();
+    //qt.update();
 }

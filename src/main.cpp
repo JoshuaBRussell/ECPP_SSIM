@@ -53,8 +53,10 @@ static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree qt){
     
     PositionZ1_Component init_posz1_val = {entity_id, pos};
     Position_Component init_pos_val     = {entity_id, pos};
-    Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.2)*0.1)};
-    //Velocity_Component init_vel_val     = {entity_id, Vector2D(0.2, 0.2)};  
+    //Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.02)*0.1)};
+    float vx = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/1.5)) - 0.75; 
+    float vy = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/1.5)) - 0.75; 
+    Velocity_Component init_vel_val     = {entity_id, Vector2D(vx, vy)};  
     Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, -0.01)}; 
     
     Controller_Component init_contr_val = {entity_id, 5.0, 0.0, Vector2D(2.0, 2.0)};
@@ -118,9 +120,10 @@ int main() {
         
         i++;
 
-        if (i == 60){
-            i = 0;
-            add_new_ball(my_world, mouse_pos, my_qt);
+        if (i%60 == 0){
+            if (i < 15000){
+                add_new_ball(my_world, mouse_pos, my_qt); 
+            } 
         }
         
         // Update
@@ -131,19 +134,18 @@ int main() {
             Collision_System_QT(my_world, TEMP_DT/8, my_qt); 
             //Collision_System(my_world, TEMP_DT/8);  
             Boundary_System(my_world);
-            my_qt.update();
         }
 
         BeginDrawing();
         ClearBackground(BLACK);
         // Draws Image files designated by the Render_Component
-        quad_image_ptr = my_qt.drawQuadTree(nullptr, Vector2D(0,0), 0);
-        raylib::Texture qt_tex(*quad_image_ptr); 
-        qt_tex.Draw();        
+        //quad_image_ptr = my_qt.drawQuadTree(nullptr, Vector2D(0,0), 0);
+        //raylib::Texture qt_tex(*quad_image_ptr); 
+        //qt_tex.Draw();        
         Render_System_NonExclusive(my_world);
         EndDrawing();
 
-        qt_tex.Unload(); 
+        //qt_tex.Unload(); 
         
     }
 
