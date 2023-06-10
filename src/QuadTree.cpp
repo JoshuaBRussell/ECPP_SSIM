@@ -3,6 +3,7 @@
 #include <cmath>
 #include <stack>
 #include <unordered_set>
+#include <map> 
 
 #include <raylib-cpp.hpp> // Temp for drawing QuadTree
 #include "Render.hpp"
@@ -196,6 +197,10 @@ void QuadTree::add_element(int ID, Vector2D pos){
             
             // data_node_count for this node is incremented above
             this->add_element_to_node(curr_quad_node, curr_data_node_ptr);
+
+            // Go ahead and insert it the map pair - even if it needs to split,
+            // and be paired with the children
+            this->leaf_map.insert({ID, curr_quad_node});
             
             // If needed, split the leaf into a parent
             if(curr_quad_node->data_node_count > this->max_node_capacity){
@@ -294,7 +299,7 @@ std::unordered_set<int> QuadTree::remove_all_elements(){
         
         // It is a leaf, all data elements need to be removed
         } else {
-            
+
             struct QuadNode *curr_quad_node = curr_node_info.quad_node_ptr;
             // Delete the parent's data nodes
             struct DataNode *curr_data_node_ptr = curr_quad_node->first_node_ptr; 
@@ -329,6 +334,7 @@ void QuadTree::readd_all_elements(){
 
 void QuadTree::update(){
 
+    this->leaf_map.clear();
     this->readd_all_elements();
     
     // Delete any nodes that are empty
@@ -378,6 +384,26 @@ void QuadTree::cleanup(){
             curr_parent_node->first_child_ptr = nullptr;
         }
     }
+}
+
+std::unordered_set<int>* QuadTree::find_neighbors(int ID){
+    
+    std::unordered_set<int>* neigh_ID_set_ptr = new std::unordered_set<int>;
+    
+    std::multimap<int, struct QuadNode*>::iterator it;  
+    for (it = this->leaf_map.lower_bound(ID); it != this->leaf_map.upper_bound(ID); ++it){
+        
+        struct QuadNode* curr_quad_node_ptr = it->second;
+        struct DataNode* curr_data_node_ptr = curr_quad_node_ptr->first_node_ptr;
+        
+        while(curr_data_node_ptr != nullptr){
+            neigh_ID_set_ptr->insert(curr_data_node_ptr->ID);
+
+            curr_data_node_ptr = curr_data_node_ptr->next;
+        }
+    }
+
+    return neigh_ID_set_ptr;
 }
 
 // Quadrant Tree 
@@ -446,7 +472,20 @@ void QuadTree::split_and_distribute(struct QuadNodeInfo curr_node_info){
 
         Vector2D pos    = this->get_pos_from_ID(curr_data_node_ptr->ID);
         double radius   = this->get_coll_radius_from_ID(curr_data_node_ptr->ID);
-        
+
+        // Remove the data node's association with the - now - parent quad node
+        std::multimap<int, struct QuadNode*>::iterator it;  
+        for (it = this->leaf_map.find(curr_data_node_ptr->ID); it != this->leaf_map.end(); ++it){
+            if (it->second == node){
+                this->leaf_map.erase(it); 
+                break; // There should only be once instance of the {ID : parent_node_ptr} pair,
+                       // so break once we find it. 
+                       // Also, if there is only 1 instance in which ID is a key, the erasure might invalidate
+                       // the iterator (it was causing an error, I I think this is why?)
+            }
+        } 
+
+
         // Since a data node element can inhabit multiple nodes, 
         // we loop through all children seeing if a data node 
         // inhabits any of them 
@@ -479,6 +518,9 @@ void QuadTree::split_and_distribute(struct QuadNodeInfo curr_node_info){
 
                 (node->first_child_ptr + child_index)->data_node_count++;
                 this->add_element_to_node((node->first_child_ptr + child_index), child_data_node_ptr);
+
+                // Associate this element w/ the leaf
+                this->leaf_map.insert({child_data_node_ptr->ID, (node->first_child_ptr + child_index)});
             } 
 
         }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_set>
+#include <utility>
 
 #include "ECSManager.hpp"
 #include "Vector2D.hpp"
@@ -30,13 +31,16 @@ class QuadTree{
     int max_node_capacity;
     Vector2D bott_left;
     Vector2D top_right;
+
+    std::multimap<int, struct QuadNode *> leaf_map;
     
     QuadNode *root_node_ptr; 
 
     int find_quad_offset(Vector2D bott_left, Vector2D top_right, Vector2D pos);
     Vector2D find_bott_left(int curr_depth, Vector2D bott_left, int child_offset);
     bool is_in_region(Vector2D pos, double radius, Vector2D child_bott_left, Vector2D child_top_right);   
-
+    
+    void remove_element_from_leaf_map(int ID, struct QuadNode *quad_node_ptr);
     std::unordered_set<int> remove_all_elements();
     void readd_all_elements();
     bool is_empty_leaf(struct QuadNode *node); 
@@ -54,6 +58,10 @@ class QuadTree{
     void add_element(int ID, Vector2D pos);
     void update(); 
     int  get_count();
+
+    // Mem must be deleted for this pointer
+    std::unordered_set<int>* find_neighbors(int ID);
+
 
     raylib::Image *drawQuadTree(QuadNode* quad_node_ptr, Vector2D bott_left, int curr_depth);
     raylib::Image background_image; 
