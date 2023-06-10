@@ -389,7 +389,7 @@ void QuadTree::cleanup(){
 std::unordered_set<int>* QuadTree::find_neighbors(int ID){
     
     std::unordered_set<int>* neigh_ID_set_ptr = new std::unordered_set<int>;
-    
+     
     std::multimap<int, struct QuadNode*>::iterator it;  
     for (it = this->leaf_map.lower_bound(ID); it != this->leaf_map.upper_bound(ID); ++it){
         
@@ -398,11 +398,10 @@ std::unordered_set<int>* QuadTree::find_neighbors(int ID){
         
         while(curr_data_node_ptr != nullptr){
             neigh_ID_set_ptr->insert(curr_data_node_ptr->ID);
-
             curr_data_node_ptr = curr_data_node_ptr->next;
         }
     }
-
+    
     return neigh_ID_set_ptr;
 }
 

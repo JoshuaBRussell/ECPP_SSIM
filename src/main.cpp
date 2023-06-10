@@ -54,7 +54,8 @@ static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree qt){
     PositionZ1_Component init_posz1_val = {entity_id, pos};
     Position_Component init_pos_val     = {entity_id, pos};
     Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.2)*0.1)};
-    Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, -0.81)}; 
+    //Velocity_Component init_vel_val     = {entity_id, Vector2D(0.2, 0.2)};  
+    Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, -0.01)}; 
     
     Controller_Component init_contr_val = {entity_id, 5.0, 0.0, Vector2D(2.0, 2.0)};
     
@@ -101,24 +102,36 @@ int main() {
     my_world.register_component<Position_Component>();
     my_world.register_component<Velocity_Component>();
     my_world.register_component<Acceleration_Component>();
-
+    int i = 0;
     QuadTree my_qt(my_world, Vector2D(0.0, 0.0), Vector2D(4.0, 4.0), 16, 4); 
     raylib::Image *quad_image_ptr; 
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
+        float mouse_x = screen2worldscale_X(Mouse.GetPosition().x);
+        float mouse_y = screen2world_Y(Mouse.GetPosition().y);
+        Vector2D mouse_pos = Vector2D(mouse_x, mouse_y); 
         
         if (Mouse.IsButtonPressed(0)){
-            float x = screen2worldscale_X(Mouse.GetPosition().x);
-            float y = screen2world_Y(Mouse.GetPosition().y);
-            Vector2D pos = Vector2D(x, y);
-            add_new_ball(my_world, pos, my_qt);
+            
+            add_new_ball(my_world, mouse_pos, my_qt);
         }
+        
+        i++;
+
+        if (i == 60){
+            i = 0;
+            add_new_ball(my_world, mouse_pos, my_qt);
+        }
+        
         // Update
         for (int i = 0; i < 8; i++){
-            Controller_System(my_world); 
-            Motion_System(my_world, TEMP_DT/8); 
-            Collision_System(my_world, TEMP_DT/8);  
-            Boundary_System(my_world); 
+            //Controller_System(my_world); 
+            Motion_System(my_world, TEMP_DT/8);
+            my_qt.update();
+            Collision_System_QT(my_world, TEMP_DT/8, my_qt); 
+            //Collision_System(my_world, TEMP_DT/8);  
+            Boundary_System(my_world);
+            my_qt.update();
         }
 
         BeginDrawing();
@@ -130,10 +143,8 @@ int main() {
         Render_System_NonExclusive(my_world);
         EndDrawing();
 
-        qt_tex.Unload();
-
-        my_qt.update();
-
+        qt_tex.Unload(); 
+        
     }
 
     return 0;
