@@ -124,7 +124,6 @@ void QuadTree::add_element(int ID, Vector2D pos){
     
     // Get collision radius - assumes circular shaped object
     double radius = this->get_coll_radius_from_ID(ID);
-
     std::stack<struct QuadNodeInfo> quad_info_stack;
 
     struct QuadNodeInfo qn_info = {
@@ -149,31 +148,25 @@ void QuadTree::add_element(int ID, Vector2D pos){
 
         // If it's not a leaf, find out which of its children need be added to the stack 
         if(curr_node_info.quad_node_ptr->first_child_ptr != nullptr){ 
-        
+             
+            Vector2D w_h_vec = curr_node_info.curr_tr - curr_node_info.curr_bl; 
+            // Find child_bott_left
+            Vector2D child_bott_left; 
+            Vector2D child_bott_left_array[] = {
+                    curr_node_info.curr_bl + 0.5*w_h_vec,
+                    curr_node_info.curr_bl + Vector2D(0.0, w_h_vec.y/2), 
+                    curr_node_info.curr_bl,
+                    curr_node_info.curr_bl + Vector2D(w_h_vec.x/2, 0.0) 
+            }; 
             // Go through any of its children. 
             // If any contain a region of the object,
             // add it to the stack to be processed 
             for (int child_offset = 0; child_offset < 4; child_offset++){
                 
                 struct QuadNode * curr_child_ptr = curr_node_info.quad_node_ptr->first_child_ptr + child_offset;
-
-                Vector2D w_h_vec = curr_node_info.curr_tr - curr_node_info.curr_bl; 
-                // Find child_bott_left
-                Vector2D child_bott_left; 
-
-                if (child_offset == 0){
-                    child_bott_left = curr_node_info.curr_bl + 0.5*w_h_vec; 
-                }
-                if (child_offset == 1){
-                    child_bott_left = curr_node_info.curr_bl + Vector2D(0.0, w_h_vec.y/2);
-                }
-                if (child_offset == 2){
-                    child_bott_left = curr_node_info.curr_bl; //i.e. no change
-                }
-                if (child_offset == 3){
-                    child_bott_left = curr_node_info.curr_bl + Vector2D(w_h_vec.x/2, 0.0);
-                }
-
+ 
+                child_bott_left = child_bott_left_array[child_offset]; 
+                
                 Vector2D child_top_right = child_bott_left + 0.5*w_h_vec;
 
                 // Add to the stack to be processed 
@@ -187,8 +180,6 @@ void QuadTree::add_element(int ID, Vector2D pos){
                 } 
             } 
 
-
-        
         } else {
              
             struct QuadNode *curr_quad_node = curr_node_info.quad_node_ptr;  
@@ -432,30 +423,25 @@ void QuadTree::split_and_distribute(struct QuadNodeInfo curr_node_info){
             }
         } 
 
-
+        Vector2D w_h_vec = curr_node_info.curr_tr - curr_node_info.curr_bl; 
+        // Find child_bott_left
+        Vector2D child_bott_left; 
+        Vector2D child_bott_left_array[] = {
+                curr_node_info.curr_bl + 0.5*w_h_vec,
+                curr_node_info.curr_bl + Vector2D(0.0, w_h_vec.y/2), 
+                curr_node_info.curr_bl,
+                curr_node_info.curr_bl + Vector2D(w_h_vec.x/2, 0.0) 
+        }; 
         // Since a data node element can inhabit multiple nodes, 
         // we loop through all children seeing if a data node 
         // inhabits any of them 
         for(int child_index = 0; child_index < 4; child_index++){
             
-            Vector2D child_bl; 
-            // Find the bott_left for each tree
-            if (child_index == 0){
-                child_bl = node_bl + 0.5*w_h_vec; 
-            }
-            if (child_index == 1){
-                child_bl = node_bl + Vector2D(0.0, w_h_vec.y/2);
-            }
-            if (child_index == 2){
-                child_bl = node_bl; //i.e. no change
-            }
-            if (child_index == 3){
-                child_bl = node_bl + Vector2D(w_h_vec.x/2, 0.0);
-            }
+            child_bott_left = child_bott_left_array[child_index]; 
 
-            Vector2D child_tr = child_bl + 0.5*w_h_vec; 
+            Vector2D child_top_right = child_bott_left + 0.5*w_h_vec; 
             
-            if (this->is_in_region(pos, radius, child_bl, child_tr)){
+            if (this->is_in_region(pos, radius, child_bott_left, child_top_right)){
 
                 // Create a new data node element to then add to the child
                 struct DataNode *child_data_node_ptr = new struct DataNode;
