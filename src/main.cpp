@@ -15,6 +15,7 @@
 #include "ComponentStorage.hpp"
 
 #include "Motion.hpp"
+#include "Rectangle.hpp"
 #include "Render.hpp"
 #include "Boundary.hpp"
 #include "Controller.hpp"
@@ -31,11 +32,13 @@
 #include "./ECS/components/Collision_comp.hpp"
 #include "./ECS/components/Controller_comp.hpp"
 
+#include "QuadTree.hpp"
+
 #define WORLD_RADIUS (SCREEN_WIDTH_METERS/2)
 
 #define TOTAL_SUBSTEPS 8
 
-#define TOTAL_OBJECTS 50 
+#define TOTAL_OBJECTS 100 
 
 #define TARGET_FPS 60.0
 
@@ -44,14 +47,17 @@
 #define WINDOW_NAME "Virtual Bob"
 
 
-static void add_new_ball(ECS_Manager &my_world, Vector2D pos){
+static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree &qt){
     
-    int entity_id = my_world.create_entity();
+    int entity_id = my_world.create_entity();      
     
     PositionZ1_Component init_posz1_val = {entity_id, pos};
     Position_Component init_pos_val     = {entity_id, pos};
-    Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.2)*0.1)};
-    Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, -0.81)}; 
+    //Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.02)*0.1)};
+    float vx = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/1.5)) - 0.75; 
+    float vy = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/1.5)) - 0.75; 
+    Velocity_Component init_vel_val     = {entity_id, Vector2D(vx, vy)};  
+    Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, -0.01)}; 
     
     Controller_Component init_contr_val = {entity_id, 5.0, 0.0, Vector2D(2.0, 2.0)};
     
@@ -70,21 +76,20 @@ static void add_new_ball(ECS_Manager &my_world, Vector2D pos){
     my_world.add_component<Motion_Component>(init_mot_val);
     my_world.add_component<Render_Component>(init_render_val); 
     my_world.add_component<Boundary_Component>(init_bounds_val);
-    my_world.add_component<Collision_Component>(init_coll_comp); 
+    my_world.add_component<Collision_Component>(init_coll_comp);
+
+    qt.add_element(entity_id, pos); 
 }
 
-
 int main() {
-    
+
     // Initialization
     raylib::Color textColor(LIGHTGRAY);
     raylib::Window w(SCREEN_WIDTH_IN_PIXELS, SCREEN_HEIGHT_IN_PIXELS, WINDOW_NAME);
     raylib::Mouse Mouse;
     
-    SetTargetFPS(TARGET_FPS);
-
-    //Create Arrays
-   
+    SetTargetFPS(TARGET_FPS); 
+     
     ECS_Manager my_world;
     
     // Indicator Components - should these be 'archetypes'?
@@ -99,32 +104,48 @@ int main() {
     my_world.register_component<Position_Component>();
     my_world.register_component<Velocity_Component>();
     my_world.register_component<Acceleration_Component>();
-        
-
-    for (int entity_id = 0; entity_id < 5; entity_id++){
-        Vector2D default_pos = Vector2D(1.5, 1.5);
-        add_new_ball(my_world, default_pos);
-    }
-    
-    // Main game loop
+    int i = 0;
+    QuadTree my_qt(my_world, Vector2D(0.0, 0.0), Vector2D(4.0, 4.0), 16, 4); 
+    raylib::Image *quad_image_ptr; 
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
+        float mouse_x = screen2worldscale_X(Mouse.GetPosition().x);
+        float mouse_y = screen2world_Y(Mouse.GetPosition().y);
+        Vector2D mouse_pos = Vector2D(mouse_x, mouse_y); 
         
         if (Mouse.IsButtonPressed(0)){
-            float x = screen2worldscale_X(Mouse.GetPosition().x);
-            float y = screen2world_Y(Mouse.GetPosition().y);
-            Vector2D pos = Vector2D(x, y);
-            add_new_ball(my_world, pos);
+            
+            add_new_ball(my_world, mouse_pos, my_qt);
         }
+        
+        i++;
+
+        if (i%60 == 0){
+            if (i < 15000){
+                add_new_ball(my_world, mouse_pos, my_qt); 
+            } 
+        }
+        
         // Update
         for (int i = 0; i < 8; i++){
-            Controller_System(my_world); 
-            Motion_System(my_world, TEMP_DT/8); 
-            Collision_System(my_world, TEMP_DT/8);  
-            Boundary_System(my_world); 
+            //Controller_System(my_world); 
+            Motion_System(my_world, TEMP_DT/8);
+            my_qt.update();
+            Collision_System_QT(my_world, TEMP_DT/8, my_qt); 
+            //Collision_System(my_world, TEMP_DT/8);  
+            Boundary_System(my_world);
         }
 
-        Render_System(my_world);
+        BeginDrawing();
+        ClearBackground(BLACK);
+        // Draws Image files designated by the Render_Component
+        //quad_image_ptr = my_qt.drawQuadTree(nullptr, Vector2D(0,0), 0);
+        //raylib::Texture qt_tex(*quad_image_ptr); 
+        //qt_tex.Draw();        
+        Render_System_NonExclusive(my_world);
+        EndDrawing();
+
+        //qt_tex.Unload(); 
         
     }
 

@@ -41,4 +41,5 @@ static double world2screen_Y(double y){
 
 void Render_init();
 
-void Render_System(ECS_Manager &world);
+void Render_System_Exclusive(ECS_Manager &world);
+void Render_System_NonExclusive(ECS_Manager &world);
