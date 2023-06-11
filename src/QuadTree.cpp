@@ -119,7 +119,9 @@ void QuadTree::add_element(int ID, Vector2D pos){
     
     // Add check to make sure this is even in the correct location
     assert(in_quadrant(this->bott_left, this->top_right, pos));
-
+    
+    this->id_set.insert(ID);
+    
     // Get collision radius - assumes circular shaped object
     double radius = this->get_coll_radius_from_ID(ID);
 
@@ -236,110 +238,56 @@ static void checkNodeCount(struct QuadNode* quad_node)
     }
 }
 
-std::unordered_set<int> QuadTree::remove_all_elements(){
-
-    std::unordered_set<int> removed_ID_set;
-
-    std::stack<struct QuadNodeInfo> quad_info_stack;
-
-    struct QuadNodeInfo qn_info = {
-        this->root_node_ptr,
-        this->bott_left,
-        this->top_right
-    };
+void QuadTree::remove_all_elements_from_leaves(){
     
-    quad_info_stack.push(qn_info);
+    // Does NOT remove element IDs from the id_set
 
-    while(quad_info_stack.size() > 0){
+    // Since the leaf map already contains the leaf nodes w/ elements,
+    // (even though there are duplicate entries) by looping through the leaves,
+    // it prevents having to traverse the QT again to find them
+    std::multimap<int, struct QuadNode*>::iterator it; 
+
+    // Loop through and delete the elements for the leaves
+    for(it = this->leaf_map.begin(); it != this->leaf_map.end(); ++it){
         
-        // Get top of stack
-        // Pop it - to actually remove it
-        struct QuadNodeInfo curr_node_info = quad_info_stack.top(); 
-        quad_info_stack.pop(); 
-
-        // If it's not a leaf
-        if(curr_node_info.quad_node_ptr->first_child_ptr != nullptr){ 
+        struct QuadNode *curr_quad_node = it->second;
+        // Delete the parent's data nodes
+        struct DataNode *curr_data_node_ptr = curr_quad_node->first_node_ptr; 
+        while(curr_data_node_ptr != nullptr){
             
-            curr_node_info.quad_node_ptr->data_node_count = 0; // Go ahead and set its count back to zero
-            
-            // Go through its children. 
-            // add it to the stack to be processed 
-            for (int child_offset = 0; child_offset < 4; child_offset++){
-                
-                struct QuadNode * curr_child_ptr = curr_node_info.quad_node_ptr->first_child_ptr + child_offset;
+            struct DataNode *temp_ptr = curr_data_node_ptr;
+            curr_data_node_ptr = curr_data_node_ptr->next;
+            delete temp_ptr;
+            temp_ptr = nullptr;
 
-                Vector2D w_h_vec = curr_node_info.curr_tr - curr_node_info.curr_bl; 
-                // Find child_bott_left
-                Vector2D child_bott_left; 
-
-                if (child_offset == 0){
-                    child_bott_left = curr_node_info.curr_bl + 0.5*w_h_vec; 
-                }
-                if (child_offset == 1){
-                    child_bott_left = curr_node_info.curr_bl + Vector2D(0.0, w_h_vec.y/2);
-                }
-                if (child_offset == 2){
-                    child_bott_left = curr_node_info.curr_bl; //i.e. no change
-                }
-                if (child_offset == 3){
-                    child_bott_left = curr_node_info.curr_bl + Vector2D(w_h_vec.x/2, 0.0);
-                }
-
-                Vector2D child_top_right = child_bott_left + 0.5*w_h_vec;
-
-                // Add to the stack to be processed 
-                struct QuadNodeInfo qn_info = {
-                    curr_child_ptr,
-                    child_bott_left,
-                    child_top_right
-                };
-                quad_info_stack.push(qn_info);                 
-                 
-            } 
-        
-        // It is a leaf, all data elements need to be removed
-        } else {
-
-            struct QuadNode *curr_quad_node = curr_node_info.quad_node_ptr;
-            // Delete the parent's data nodes
-            struct DataNode *curr_data_node_ptr = curr_quad_node->first_node_ptr; 
-            while(curr_data_node_ptr != nullptr){
-                
-                removed_ID_set.insert(curr_data_node_ptr->ID);
-                
-                struct DataNode *temp_ptr = curr_data_node_ptr;
-                curr_data_node_ptr = curr_data_node_ptr->next;
-                delete temp_ptr;
-                temp_ptr = nullptr;
-
-                curr_quad_node->data_node_count--;
-            }
-            
-            assert(curr_quad_node->data_node_count == 0);
-            curr_quad_node->first_node_ptr = nullptr;
+            curr_quad_node->data_node_count--;
         }
+        
+        assert(curr_quad_node->data_node_count == 0);
+        curr_quad_node->first_node_ptr = nullptr; 
+    
     }
-
-    return removed_ID_set;
 }
 
 void QuadTree::readd_all_elements(){
-    std::unordered_set<int> element_ID_set = this->remove_all_elements();
     
     std::unordered_set<int>::iterator it;
-    for (it = element_ID_set.begin(); it != element_ID_set.end(); ++it){
+    for (it = this->id_set.begin(); it != this->id_set.end(); ++it){
         this->add_element(*it, this->get_pos_from_ID(*it));
     }
 }
 
 void QuadTree::update(){
-
-    this->leaf_map.clear();
+    
+    this->remove_all_elements_from_leaves();
+    
+    // Delete the leaf_map now - so it can be properly update when we re-add the elements
+    this->leaf_map.clear(); 
+    
     this->readd_all_elements();
     
-    // Delete any nodes that are empty
+    // Remove quadnode siblings who are empty 
     this->cleanup();
-
 }
 
 int  QuadTree::get_count(){

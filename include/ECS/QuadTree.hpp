@@ -32,6 +32,8 @@ class QuadTree{
     Vector2D bott_left;
     Vector2D top_right;
 
+    std::unordered_set<int> id_set;
+
     std::multimap<int, struct QuadNode *> leaf_map;
     
     QuadNode *root_node_ptr; 
@@ -41,7 +43,7 @@ class QuadTree{
     bool is_in_region(Vector2D pos, double radius, Vector2D child_bott_left, Vector2D child_top_right);   
     
     void remove_element_from_leaf_map(int ID, struct QuadNode *quad_node_ptr);
-    std::unordered_set<int> remove_all_elements();
+    void remove_all_elements_from_leaves();
     void readd_all_elements();
     bool is_empty_leaf(struct QuadNode *node); 
     void cleanup();

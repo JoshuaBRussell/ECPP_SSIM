@@ -47,7 +47,7 @@
 #define WINDOW_NAME "Virtual Bob"
 
 
-static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree qt){
+static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree &qt){
     
     int entity_id = my_world.create_entity();      
     
@@ -82,7 +82,7 @@ static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree qt){
 }
 
 int main() {
-    
+
     // Initialization
     raylib::Color textColor(LIGHTGRAY);
     raylib::Window w(SCREEN_WIDTH_IN_PIXELS, SCREEN_HEIGHT_IN_PIXELS, WINDOW_NAME);
