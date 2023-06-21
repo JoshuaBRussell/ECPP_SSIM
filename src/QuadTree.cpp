@@ -15,6 +15,8 @@
 #include "./components/Position_comp.hpp"
 #include "./components/Collision_comp.hpp"
 
+//#include "FreeList.hpp"
+
 static bool in_quadrant(Vector2D bott_left, Vector2D top_right, Vector2D pos){
         
     // Left/Bottom Boundary Inclusive
@@ -36,13 +38,12 @@ QuadTree::QuadTree(ECS_Manager &world, Vector2D bott_left, Vector2D top_right, i
     this->root_node_ptr = new QuadNode;
     
     this->root_node_ptr->first_child_ptr = nullptr;
-    this->root_node_ptr->first_node_ptr  = nullptr;
+    this->root_node_ptr->first_node_index  = -1;
     this->root_node_ptr->data_node_count = 0;
 
 
     this->background_image = raylib::Image(640, 640, raylib::Color(0, 0, 0, 255));
-
-
+    
 }
 
 raylib::Image *QuadTree::drawQuadTree(QuadNode* quad_node_ptr, Vector2D bott_left, int curr_depth){
@@ -183,13 +184,15 @@ void QuadTree::add_element(int ID, Vector2D pos){
         } else {
              
             struct QuadNode *curr_quad_node = curr_node_info.quad_node_ptr;  
-            // Add element
-            struct DataNode *curr_data_node_ptr = new struct DataNode;
-            curr_data_node_ptr->next = nullptr;
-            curr_data_node_ptr->ID   = ID;
             
+            // Add element
+            struct DataNode to_insert;
+            to_insert.ID = ID;
+            to_insert.next = -1;
+            int pool_index = this->data_nodes.insert(to_insert);
+
             // data_node_count for this node is incremented above
-            this->add_element_to_node(curr_quad_node, curr_data_node_ptr);
+            this->add_element_to_node(curr_quad_node, pool_index);
 
             // Go ahead and insert it the map pair - even if it needs to split,
             // and be paired with the children
@@ -243,19 +246,20 @@ void QuadTree::remove_all_elements_from_leaves(){
         
         struct QuadNode *curr_quad_node = it->second;
         // Delete the parent's data nodes
-        struct DataNode *curr_data_node_ptr = curr_quad_node->first_node_ptr; 
-        while(curr_data_node_ptr != nullptr){
+        int curr_data_node_index = curr_quad_node->first_node_index; 
+        int temp_index;
+        while(curr_data_node_index != -1){
             
-            struct DataNode *temp_ptr = curr_data_node_ptr;
-            curr_data_node_ptr = curr_data_node_ptr->next;
-            delete temp_ptr;
-            temp_ptr = nullptr;
+            temp_index = curr_data_node_index; 
+            curr_data_node_index = this->data_nodes[temp_index].next;
+            this->data_nodes.deallocate(temp_index);
+            temp_index = -1;
 
             curr_quad_node->data_node_count--;
         }
         
         assert(curr_quad_node->data_node_count == 0);
-        curr_quad_node->first_node_ptr = nullptr; 
+        curr_quad_node->first_node_index = -1; 
     
     }
 }
@@ -287,7 +291,7 @@ int  QuadTree::get_count(){
 
 // ---- Private ---- //
 bool QuadTree::is_empty_leaf(struct QuadNode *node){
-    return node->first_child_ptr == nullptr && node->first_node_ptr == nullptr;
+    return node->first_child_ptr == nullptr && node->first_node_index == -1;
 }
 
 void QuadTree::cleanup(){
@@ -333,11 +337,11 @@ std::unordered_set<int>* QuadTree::find_neighbors(int ID){
     for (it = this->leaf_map.lower_bound(ID); it != this->leaf_map.upper_bound(ID); ++it){
         
         struct QuadNode* curr_quad_node_ptr = it->second;
-        struct DataNode* curr_data_node_ptr = curr_quad_node_ptr->first_node_ptr;
+        int curr_data_node_index = curr_quad_node_ptr->first_node_index;
         
-        while(curr_data_node_ptr != nullptr){
-            neigh_ID_set_ptr->insert(curr_data_node_ptr->ID);
-            curr_data_node_ptr = curr_data_node_ptr->next;
+        while(curr_data_node_index != -1){
+            neigh_ID_set_ptr->insert(this->data_nodes[curr_data_node_index].ID);
+            curr_data_node_index = this->data_nodes[curr_data_node_index].next;
         }
     }
     
@@ -379,17 +383,17 @@ int QuadTree::find_quad_offset(Vector2D bott_left, Vector2D top_right, Vector2D 
 // And that the data is already placed in the data_node
 // The data_node_count data member must be incremented by the callee 
 void QuadTree::add_element_to_node(struct QuadNode *quad_node_ptr, 
-                                   struct DataNode *data_node_ptr){
-    if(quad_node_ptr->first_node_ptr == nullptr){ 
+                                   int index){
+    if(quad_node_ptr->first_node_index == -1){ 
 
-        quad_node_ptr->first_node_ptr = data_node_ptr;
+        quad_node_ptr->first_node_index = index;
     
     } else {
 
-        struct DataNode *temp_ptr = quad_node_ptr->first_node_ptr;
+        int temp_index = quad_node_ptr->first_node_index;
 
-        quad_node_ptr->first_node_ptr = data_node_ptr;
-        quad_node_ptr->first_node_ptr->next = temp_ptr;
+        quad_node_ptr->first_node_index = index;
+        this->data_nodes[quad_node_ptr->first_node_index].next = temp_index;
 
     }
 }
@@ -402,18 +406,22 @@ void QuadTree::split_and_distribute(struct QuadNodeInfo curr_node_info){
     Vector2D w_h_vec      = node_tr - node_bl;
 
     struct QuadNode *children = new QuadNode[4](); // The () ensure the children are default-init to 0.
+    children[0].first_node_index = -1;
+    children[1].first_node_index = -1;
+    children[2].first_node_index = -1;  
+    children[3].first_node_index = -1;   
     node->first_child_ptr = children;
 
     // Loop through each data_node  
-    struct DataNode *curr_data_node_ptr = node->first_node_ptr;
-    while(curr_data_node_ptr != nullptr){ 
+    int curr_data_node_index = node->first_node_index;
+    while(curr_data_node_index != -1){ 
 
-        Vector2D pos    = this->get_pos_from_ID(curr_data_node_ptr->ID);
-        double radius   = this->get_coll_radius_from_ID(curr_data_node_ptr->ID);
+        Vector2D pos    = this->get_pos_from_ID(this->data_nodes[curr_data_node_index].ID);
+        double radius   = this->get_coll_radius_from_ID(this->data_nodes[curr_data_node_index].ID);
 
         // Remove the data node's association with the - now - parent quad node
         std::multimap<int, struct QuadNode*>::iterator it;  
-        for (it = this->leaf_map.find(curr_data_node_ptr->ID); it != this->leaf_map.end(); ++it){
+        for (it = this->leaf_map.find(this->data_nodes[curr_data_node_index].ID); it != this->leaf_map.end(); ++it){
             if (it->second == node){
                 this->leaf_map.erase(it); 
                 break; // There should only be once instance of the {ID : parent_node_ptr} pair,
@@ -444,32 +452,34 @@ void QuadTree::split_and_distribute(struct QuadNodeInfo curr_node_info){
             if (this->is_in_region(pos, radius, child_bott_left, child_top_right)){
 
                 // Create a new data node element to then add to the child
-                struct DataNode *child_data_node_ptr = new struct DataNode;
-                child_data_node_ptr->ID   = curr_data_node_ptr->ID;
-                child_data_node_ptr->next = nullptr; // Just to be safe
+                struct DataNode to_insert;
+                to_insert.ID = this->data_nodes[curr_data_node_index].ID; 
+                to_insert.next = -1;
 
+                int index = this->data_nodes.insert(to_insert);
 
                 (node->first_child_ptr + child_index)->data_node_count++;
-                this->add_element_to_node((node->first_child_ptr + child_index), child_data_node_ptr);
+                this->add_element_to_node((node->first_child_ptr + child_index), index);
 
                 // Associate this element w/ the leaf
-                this->leaf_map.insert({child_data_node_ptr->ID, (node->first_child_ptr + child_index)});
+                this->leaf_map.insert({this->data_nodes[curr_data_node_index].ID, (node->first_child_ptr + child_index)});
             } 
 
         }
-        curr_data_node_ptr = curr_data_node_ptr->next; 
+        curr_data_node_index = this->data_nodes[curr_data_node_index].next; 
     }
 
     // Delete the parent's data nodes
-    curr_data_node_ptr = node->first_node_ptr; 
-    while(curr_data_node_ptr != nullptr){
-        struct DataNode *temp_ptr = curr_data_node_ptr;
-        curr_data_node_ptr = curr_data_node_ptr->next;
-        delete temp_ptr;
-        temp_ptr = nullptr;
+    curr_data_node_index = node->first_node_index; 
+    int temp_index;
+    while(curr_data_node_index != -1){
+        temp_index = curr_data_node_index;
+        curr_data_node_index = this->data_nodes[curr_data_node_index].next;
+        this->data_nodes.deallocate(temp_index);
+        temp_index = -1;
     }
      
-    node->first_node_ptr = nullptr;
+    node->first_node_index = -1;
 }
 
 Vector2D QuadTree::find_bott_left(int curr_depth, Vector2D bott_left, int child_offset){
