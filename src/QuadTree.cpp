@@ -262,6 +262,34 @@ void QuadTree::remove_all_elements_from_leaves(){
         curr_quad_node->first_node_index = -1; 
     
     }
+
+    // Go through the branches of the tree zero-ing out the data_node_count
+    // Shouldn't be nearly as bad of a performance hit since the tree is only being traversed once
+    // Do this after the clearing of the leaves, that way assert(curr_quad_node->data_node_count == 0) 
+    // still has debugging utility
+    std::stack<struct QuadNode*> quad_node_stack;
+
+    quad_node_stack.push(this->root_node_ptr);
+
+    while(quad_node_stack.size() > 0){
+        
+        // Get top of stack
+        // Pop it - to actually remove it
+        struct QuadNode *curr_node = quad_node_stack.top(); 
+        quad_node_stack.pop(); 
+
+        // If it's not a leaf, add its children 
+        if(curr_node->first_child_ptr != nullptr){ 
+            
+            curr_node->data_node_count = 0;   
+            
+            quad_node_stack.push(curr_node->first_child_ptr+0);
+            quad_node_stack.push(curr_node->first_child_ptr+1);
+            quad_node_stack.push(curr_node->first_child_ptr+2);
+            quad_node_stack.push(curr_node->first_child_ptr+3);
+
+        } 
+    }
 }
 
 void QuadTree::readd_all_elements(){
