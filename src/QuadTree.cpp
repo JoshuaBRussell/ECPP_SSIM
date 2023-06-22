@@ -207,31 +207,6 @@ void QuadTree::add_element(int ID, Vector2D pos){
     }             
 }
 
-static void checkNodeCount(struct QuadNode* quad_node)
-{
-    if (quad_node == NULL)
-        return;
- 
-    if (quad_node->first_child_ptr != nullptr){
-        checkNodeCount(quad_node->first_child_ptr + 0);
-        checkNodeCount(quad_node->first_child_ptr + 1);
-        checkNodeCount(quad_node->first_child_ptr + 2);
-        checkNodeCount(quad_node->first_child_ptr + 3); 
-    
-        // Check the parent adds to the children
-        int children_sum = 0;
-        for (int i = 0; i < 4; i++){
-            struct QuadNode *curr_child_ptr = quad_node->first_child_ptr + i;
-            children_sum += curr_child_ptr->data_node_count;
-        }
-
-        assert(quad_node->data_node_count == children_sum);
-
-        std::cout << "P Sum: " << quad_node->data_node_count << std::endl;
-        std::cout << "C Sum: " << children_sum << std::endl;
-    }
-}
-
 void QuadTree::remove_all_elements_from_leaves(){
     
     // Does NOT remove element IDs from the id_set
