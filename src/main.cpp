@@ -120,7 +120,7 @@ int main() {
         
         i++;
 
-        if (i%60 == 0){
+        if (i%30 == 0){
             if (i < 15000){
                 add_new_ball(my_world, mouse_pos, my_qt); 
             } 
@@ -139,9 +139,9 @@ int main() {
         BeginDrawing();
         ClearBackground(BLACK);
         // Draws Image files designated by the Render_Component
-        //quad_image_ptr = my_qt.drawQuadTree(nullptr, Vector2D(0,0), 0);
-        //raylib::Texture qt_tex(*quad_image_ptr); 
-        //qt_tex.Draw();        
+        quad_image_ptr = my_qt.drawQuadTree(nullptr, Vector2D(0,0), 0);
+        raylib::Texture qt_tex(*quad_image_ptr); 
+        qt_tex.Draw();        
         Render_System_NonExclusive(my_world);
         EndDrawing();
 

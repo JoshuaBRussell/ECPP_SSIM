@@ -7,10 +7,12 @@
 #include "Vector2D.hpp"
 
 #include "Render.hpp"
+#include "MemoryPool.hpp"
+
 struct DataNode {
     int ID;
 
-    struct DataNode *next;
+    int next;
 };
 
 struct QuadNode {
@@ -19,7 +21,7 @@ struct QuadNode {
     struct QuadNode *first_child_ptr; 
 
     //Data Elements
-    struct DataNode *first_node_ptr;
+    int first_node_index;
     int data_node_count;
  
 };
@@ -48,7 +50,7 @@ class QuadTree{
     bool is_empty_leaf(struct QuadNode *node); 
     void cleanup();
     
-    void add_element_to_node(struct QuadNode *quad_node_ptr, struct DataNode *data_node_ptr);
+    void add_element_to_node(struct QuadNode *quad_node_ptr, int index);
     void split_and_distribute(struct QuadNodeInfo curr_node_info);
 
     Vector2D get_pos_from_ID(int ID);
@@ -56,6 +58,8 @@ class QuadTree{
 
   public:
     
+    MemoryPool<struct DataNode> data_nodes;
+
     QuadTree(ECS_Manager &world, Vector2D bott_left, Vector2D top_right, int max_depth, int max_node_capacity);
     void add_element(int ID, Vector2D pos);
     void update(); 
