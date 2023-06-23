@@ -130,11 +130,11 @@ int main() {
         for (int i = 0; i < 8; i++){
             //Controller_System(my_world); 
             Motion_System(my_world, TEMP_DT/8);
-            my_qt.update();
             Collision_System_QT(my_world, TEMP_DT/8, my_qt); 
             //Collision_System(my_world, TEMP_DT/8);  
             Boundary_System(my_world);
         }
+        my_qt.update();
 
         BeginDrawing();
         ClearBackground(BLACK);

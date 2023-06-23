@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <map>
+#include <unordered_map>
 #include <array>
 
 #include "ECS.hpp"
@@ -32,12 +33,8 @@ class ComponentStorage : public VComponentStorage{
     T *get_component(int entity_id){
         
         T *return_result = nullptr;
-        if (this->id_to_index_map.count(entity_id)){
             
-            T *start_ptr = this->storage_container.data(); 
-            return_result = &(start_ptr[this->id_to_index_map.at(entity_id)]); 
-        
-        }
+        return_result =  this->storage_container.data() + this->id_to_index_map.at(entity_id);
 
         return return_result;
     }
@@ -58,6 +55,6 @@ class ComponentStorage : public VComponentStorage{
       std::array<T, MAX_ENTITIES> storage_container;
       size_t storage_container_count;
 
-      std::map<int, size_t> id_to_index_map;  
+      std::unordered_map<int, size_t> id_to_index_map;  
 };
 
