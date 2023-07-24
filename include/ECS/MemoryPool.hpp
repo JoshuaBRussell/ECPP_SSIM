@@ -14,7 +14,7 @@ class MemoryPool{
   public:
         //MemoryPool(size_t pool_count) 
         MemoryPool(){
-            size_t pool_count = 1000;
+            size_t pool_count = 2000;
             this->mem_pool_ptr = new FreeElement[pool_count]();
             this->next_free = 0;
 
