@@ -81,16 +81,13 @@ lib: submodules
 	$(MKDIR) $(call platformpth, lib/$(platform))
 	$(call COPY,vendor/raylib/$(libGenDir),lib/$(platform),libraylib.a)
 
-# Link the program and create the executable
-$(target): $(objects)
-	$(CXX) $(objects) -o $(target) $(linkFlags)
-
 # Add all rules from dependency files
 -include $(depends)
 
 # Compile objects to the build directory
 $(buildDir)/%.o: src/%.cpp Makefile
 	$(MKDIR) $(call platformpth, $(@D))
+	$(info This works) 
 	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)
 
 # Run the executable
@@ -100,3 +97,22 @@ execute:
 # Clean up all relevant files
 clean:
 	$(RM) $(call platformpth, $(buildDir)/*)
+
+
+# Link the program and create the executable
+$(target): $(objects)
+	$(CXX) $(objects) -o $(target) $(linkFlags)
+
+# Link the program and create the executable
+boids: $(objects) boid_main.o
+	$(CXX) $(objects) bin/boid_main.o -o $(target) $(linkFlags)
+
+boid_main.o:
+	$(CXX) -c $(compileFlags) Examples/Boids/main.cpp -o bin/boid_main.o 
+
+
+collision: $(objects) collision_main.o
+	$(CXX) $(objects) bin/collision_main.o -o $(target) $(linkFlags)
+
+collision_main.o:
+	$(CXX) -c $(compileFlags) Examples/Collision/main.cpp -o bin/collision_main.o
