@@ -24,12 +24,14 @@ void Collision_System(ECS_Manager &world, double dt){
                 // Find distance between to OBJECT_RADIUS
                 Vector2D disp_vec = pos_comp_A_ptr->position - pos_comp_B_ptr->position;
                 double dist = disp_vec.mag();
-                // If the distance is less the sum of their radii -> collision occured
                 
-                if ( dist <= 2*OBJECT_RADIUS){
+                // If the distance is less the sum of their radii -> collision occured
+                double obj_radius = world.get_component<Collision_Component>(coll_B->entity_id)->radius;  
+                
+                if ( dist <= 2*obj_radius){
                     Vector2D norm_vec = (1/dist)*(disp_vec);
 
-                    Vector2D temp = (2*OBJECT_RADIUS - dist) * norm_vec;
+                    Vector2D temp = (2*obj_radius - dist) * norm_vec;
                     
                     pos_comp_A_ptr->position += temp;
                     pos_comp_B_ptr->position -= temp; 
@@ -73,11 +75,13 @@ void Collision_System_QT(ECS_Manager &world, double dt, QuadTree &qt){
                 Vector2D disp_vec = pos_comp_A_ptr->position - pos_comp_B_ptr->position;
                 double dist = disp_vec.mag();
                 // If the distance is less the sum of their radii -> collision occured
+
+                double obj_radius = world.get_component<Collision_Component>(coll_B_ID)->radius;
                 
-                if ( dist <= 2*OBJECT_RADIUS){
+                if ( dist <= 2*obj_radius){
                     Vector2D norm_vec = (1/dist)*(disp_vec);
 
-                    Vector2D temp = (2*OBJECT_RADIUS - dist) * norm_vec;
+                    Vector2D temp = (2*obj_radius - dist) * norm_vec;
                     
                     pos_comp_A_ptr->position += temp;
                     pos_comp_B_ptr->position -= temp; 

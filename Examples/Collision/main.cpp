@@ -11,6 +11,8 @@
 
 #include <raylib-cpp.hpp>
 
+#include "main.hpp"
+
 #include "ECSManager.hpp"
 #include "ComponentStorage.hpp"
 
@@ -93,6 +95,16 @@ int main() {
     SetTargetFPS(TARGET_FPS); 
      
     ECS_Manager my_world;
+
+    // ---- Init Systems ---- //
+    struct render_config render_config = {
+        .screen_width_in_pixels  = SCREEN_WIDTH_IN_PIXELS,
+        .screen_height_in_pixels = SCREEN_HEIGHT_IN_PIXELS,
+        .screen_width_in_meters  = SCREEN_WIDTH_METERS,
+        .screen_height_in_meters = SCREEN_HEIGHT_METERS
+    };
+    
+    Render_init(render_config);
     
     // Indicator Components - should these be 'archetypes'?
     my_world.register_component<Motion_Component>();
@@ -120,9 +132,7 @@ int main() {
  
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
-        float mouse_x = screen2worldscale_X(Mouse.GetPosition().x);
-        float mouse_y = screen2world_Y(Mouse.GetPosition().y);
-        Vector2D mouse_pos = Vector2D(mouse_x, mouse_y); 
+        Vector2D mouse_pos = Input_get_pos_from_mouse(Mouse); 
          
         if (Mouse.IsButtonPressed(0)){
             

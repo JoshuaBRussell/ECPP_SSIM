@@ -11,6 +11,8 @@
 
 #include <raylib-cpp.hpp>
 
+#include "main.hpp"
+
 #include "ECSManager.hpp"
 #include "ComponentStorage.hpp"
 
@@ -95,7 +97,17 @@ int main() {
     SetTargetFPS(TARGET_FPS); 
      
     ECS_Manager my_world;
+
+    // ---- Init Systems ---- //
+    struct render_config render_config = {
+        .screen_width_in_pixels  = SCREEN_WIDTH_IN_PIXELS,
+        .screen_height_in_pixels = SCREEN_HEIGHT_IN_PIXELS,
+        .screen_width_in_meters  = SCREEN_WIDTH_METERS,
+        .screen_height_in_meters = SCREEN_HEIGHT_METERS
+    };
     
+    Render_init(render_config); 
+
     // Indicator Components - should these be 'archetypes'?
     my_world.register_component<Motion_Component>();
     my_world.register_component<Render_Component>();
@@ -119,26 +131,14 @@ int main() {
 
         add_new_ball(my_world, Vector2D(x, y), my_qt); 
     }
- 
-    while (!w.ShouldClose()) // Detect window close button or ESC key
-    {
-        float mouse_x = screen2worldscale_X(Mouse.GetPosition().x);
-        float mouse_y = screen2world_Y(Mouse.GetPosition().y);
-        Vector2D mouse_pos = Vector2D(mouse_x, mouse_y); 
-         
-        if (Mouse.IsButtonPressed(0)){
-            
+
+    while (!w.ShouldClose()){// Detect window close button or ESC key
+        
+        if (Input_is_button_pressed(Mouse, 0)){
+            Vector2D mouse_pos = Input_get_pos_from_mouse(Mouse);     
             add_new_ball(my_world, mouse_pos, my_qt);
         }
-        /* 
-        i++;
-
-        if (i%5 == 0){
-            if (i < 15000){
-                add_new_ball(my_world, mouse_pos, my_qt); 
-            } 
-        }
-        */
+        
         
         // Update
         for (int i = 0; i < 8; i++){
