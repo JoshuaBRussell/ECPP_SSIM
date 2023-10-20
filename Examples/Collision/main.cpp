@@ -11,6 +11,8 @@
 
 #include <raylib-cpp.hpp>
 
+#include "main.hpp"
+
 #include "ECSManager.hpp"
 #include "ComponentStorage.hpp"
 
@@ -57,8 +59,6 @@ static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree &qt){
     //Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.02)*0.1)};
     float vx = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/3.0)) - 1.5; 
     float vy = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/3.0)) - 1.5;
-    vx = 0.0;
-    vy = 0.0;
 
     Velocity_Component init_vel_val     = {entity_id, Vector2D(vx, vy)};  
     Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, 0.0)}; 
@@ -95,6 +95,16 @@ int main() {
     SetTargetFPS(TARGET_FPS); 
      
     ECS_Manager my_world;
+
+    // ---- Init Systems ---- //
+    struct render_config render_config = {
+        .screen_width_in_pixels  = SCREEN_WIDTH_IN_PIXELS,
+        .screen_height_in_pixels = SCREEN_HEIGHT_IN_PIXELS,
+        .screen_width_in_meters  = SCREEN_WIDTH_METERS,
+        .screen_height_in_meters = SCREEN_HEIGHT_METERS
+    };
+    
+    Render_init(render_config);
     
     // Indicator Components - should these be 'archetypes'?
     my_world.register_component<Motion_Component>();
@@ -112,7 +122,7 @@ int main() {
     QuadTree my_qt(my_world, Vector2D(0.0, 0.0), Vector2D(4.0, 4.0), 2, 4); 
     raylib::Image *quad_image_ptr; 
     
-    for (int i = 0; i < 0; i++){
+    for (int i = 0; i < 25; i++){
         
         float x = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/3.5)) + 0.25; 
         float y = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/3.5)) + 0.25; 
@@ -122,9 +132,7 @@ int main() {
  
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
-        float mouse_x = screen2worldscale_X(Mouse.GetPosition().x);
-        float mouse_y = screen2world_Y(Mouse.GetPosition().y);
-        Vector2D mouse_pos = Vector2D(mouse_x, mouse_y); 
+        Vector2D mouse_pos = Input_get_pos_from_mouse(Mouse); 
          
         if (Mouse.IsButtonPressed(0)){
             
@@ -143,11 +151,10 @@ int main() {
         // Update
         for (int i = 0; i < 8; i++){
             //Controller_System(my_world); 
-            Boids_QT(my_world, TEMP_DT/8, my_qt); 
+            //Boids_QT(my_world, TEMP_DT/8, my_qt); 
             Motion_System(my_world, TEMP_DT/8);
             Collision_System_QT(my_world, TEMP_DT/8, my_qt); 
-            //Collision_System(my_world, TEMP_DT/8);
-            Boids_EdgeAvoidance(my_world, TEMP_DT/8);
+            //Boids_EdgeAvoidance(my_world, TEMP_DT/8);
             Boundary_System(my_world);
         }
         my_qt.update();
