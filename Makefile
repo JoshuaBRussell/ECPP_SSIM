@@ -110,9 +110,16 @@ boids: $(objects) boid_main.o
 boid_main.o:
 	$(CXX) -c $(compileFlags) Examples/Boids/main.cpp -o bin/boid_main.o 
 
-
+# Link the program and create the executable
 collision: $(objects) collision_main.o
 	$(CXX) $(objects) bin/collision_main.o -o $(target) $(linkFlags)
 
 collision_main.o:
 	$(CXX) -c $(compileFlags) Examples/Collision/main.cpp -o bin/collision_main.o
+
+# Link the program and create the executable
+flow_field: $(objects) flow_field_main.o
+	$(CXX) $(objects) bin/flow_field_main.o -o $(target) $(linkFlags)
+
+flow_field_main.o:
+	$(CXX) -c $(compileFlags) Examples/FlowField/main.cpp -o bin/flow_field_main.o
