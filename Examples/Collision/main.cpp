@@ -22,7 +22,6 @@
 #include "Boundary.hpp"
 #include "Controller.hpp"
 #include "Collision.hpp"
-#include "Boids.hpp"
 
 #include "Vector2D.hpp"
 #include "./ECS/components/PositionZ1_comp.hpp"
