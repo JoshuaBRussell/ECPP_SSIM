@@ -4,6 +4,8 @@
 #include <typeinfo>
 #include <map>
 #include <set>
+#include <cassert>
+#include <iostream>
 
 #include "ComponentStorage.hpp"
 
@@ -27,6 +29,12 @@ class ECS_Manager{
     template<typename T>
     void add_component(T component){
         const char *type_name = typeid(T).name();
+        
+        int registered_count = this->T_to_comp_storage_Map.count(type_name);
+        if (registered_count == 0){
+            std::cerr << "[ERROR]: Cannot add component. It has not been registered." << std::endl;
+            assert(registered_count > 0); 
+        }
         
         ComponentStorage<T>* my_ptr = static_cast<ComponentStorage<T>*>(this->T_to_comp_storage_Map[type_name]);
         my_ptr->add_component(component);
