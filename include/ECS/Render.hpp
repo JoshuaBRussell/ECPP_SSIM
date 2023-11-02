@@ -10,8 +10,8 @@ struct render_config{
     int screen_width_in_pixels;  
     int screen_height_in_pixels;
    
-    int screen_width_in_meters;
-    int screen_height_in_meters; 
+    float screen_width_in_meters;
+    float screen_height_in_meters; 
 };
 
 Vector2D Input_get_pos_from_mouse(raylib::Mouse &mouse_instance);
@@ -22,3 +22,4 @@ void Render_init(struct render_config &render_config);
 
 void Render_System_Exclusive(ECS_Manager &world);
 void Render_System_NonExclusive(ECS_Manager &world);
+void Render_System(ECS_Manager &world);
