@@ -22,8 +22,10 @@
 #include "Boundary.hpp"
 #include "Controller.hpp"
 #include "Collision.hpp"
+#include "FlowFieldVisual.hpp"
 
 #include "Vector2D.hpp"
+#include "./ECS/components/Rotation_comp.hpp"
 #include "./ECS/components/PositionZ1_comp.hpp"
 #include "./ECS/components/Position_comp.hpp"
 #include "./ECS/components/Velocity_comp.hpp"
@@ -33,6 +35,7 @@
 #include "./ECS/components/Boundary_comp.hpp"
 #include "./ECS/components/Collision_comp.hpp"
 #include "./ECS/components/Controller_comp.hpp"
+#include "./ECS/components/Vector_comp.hpp"
 
 #include "QuadTree.hpp"
 
@@ -40,15 +43,13 @@
 
 #define TOTAL_SUBSTEPS 8
 
-#define TOTAL_OBJECTS 100 
-
 #define TARGET_FPS 60.0
 
 #define TEMP_DT (1/TARGET_FPS)
 
-#define WINDOW_NAME "Virtual Bob"
+#define WINDOW_NAME "Flow Field Visualization"
 
-
+/*
 static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree &qt){
     
     int entity_id = my_world.create_entity();      
@@ -83,6 +84,19 @@ static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree &qt){
 
     qt.add_element(entity_id, pos); 
 }
+*/
+
+
+Vector2D ODE_System(Vector2D x){
+    
+    Vector2D x_dot = Vector2D(0.0, 0.0);
+
+    x_dot.x = -x.x;
+    x_dot.y = -x.y; 
+
+    return x_dot;
+}
+
 
 int main() {
 
@@ -105,69 +119,52 @@ int main() {
     
     Render_init(render_config);
     
-    // Indicator Components - should these be 'archetypes'?
-    my_world.register_component<Motion_Component>();
     my_world.register_component<Render_Component>();
-    my_world.register_component<Boundary_Component>();
-    my_world.register_component<Collision_Component>();
-    
-    my_world.register_component<Controller_Component>();
-
-    my_world.register_component<PositionZ1_Component>();
     my_world.register_component<Position_Component>();
-    my_world.register_component<Velocity_Component>();
-    my_world.register_component<Acceleration_Component>();
-    int i = 0;
-    QuadTree my_qt(my_world, Vector2D(0.0, 0.0), Vector2D(4.0, 4.0), 2, 4); 
-    raylib::Image *quad_image_ptr; 
+    my_world.register_component<Collision_Component>();
+    my_world.register_component<Rotation_Component>();
+    my_world.register_component<Vector_Component>(); 
     
-    for (int i = 0; i < 25; i++){
-        
-        float x = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/3.5)) + 0.25; 
-        float y = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/3.5)) + 0.25; 
+    int entity_id = 1; 
+    
+    for(float x = -(SCREEN_WIDTH_METERS/2); x <= (SCREEN_WIDTH_METERS/2); x+= 1.0){
+        for(float y = -(SCREEN_HEIGHT_METERS/2); y <= (SCREEN_HEIGHT_METERS/2); y+= 1.0){  
+            Position_Component init_pos_val     = {entity_id, Vector2D(x, y)};
 
-        add_new_ball(my_world, Vector2D(x, y), my_qt); 
+            // Find the tangent rotation direction
+            Vector2D tangent = ODE_System(Vector2D(x, y));
+            float angle = (180.0/3.14159) * std::atan2(tangent.y, tangent.x);
+
+            Vector_Component    init_vec_val    = {entity_id, tangent};
+            Rotation_Component init_rot_val     = {entity_id, angle}; 
+            Render_Component init_render_val    = {entity_id, "./misc/RedArrow.png",
+                                                   320, 320, 50, 20}; // x, y, h, w
+
+            my_world.add_component<Position_Component>(init_pos_val);
+            my_world.add_component<Render_Component>(init_render_val);
+            my_world.add_component<Rotation_Component>(init_rot_val);
+            my_world.add_component<Vector_Component>(init_vec_val);
+            entity_id++;
+        } 
     }
- 
+
+    FlowField_Visualization_System(my_world);
+   
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
-        Vector2D mouse_pos = Input_get_pos_from_mouse(Mouse); 
-         
-        if (Mouse.IsButtonPressed(0)){
+
+        /*for (auto it = my_world.get_component_begin<Rotation_Component>(); 
+              it < my_world.get_component_end<Rotation_Component>(); it++){
             
-            add_new_ball(my_world, mouse_pos, my_qt);
-        }
-        /* 
-        i++;
+            my_world.get_component<Rotation_Component>(it->entity_id)->angle +=0.2;
+    
 
-        if (i%5 == 0){
-            if (i < 15000){
-                add_new_ball(my_world, mouse_pos, my_qt); 
-            } 
-        }
-        */
-        
-        // Update
-        for (int i = 0; i < 8; i++){
-            //Controller_System(my_world); 
-            //Boids_QT(my_world, TEMP_DT/8, my_qt); 
-            Motion_System(my_world, TEMP_DT/8);
-            Collision_System_QT(my_world, TEMP_DT/8, my_qt); 
-            //Boids_EdgeAvoidance(my_world, TEMP_DT/8);
-            Boundary_System(my_world);
-        }
-        my_qt.update();
-
+        }*/ 
+         
         BeginDrawing();
         ClearBackground(BLACK);
-        // Draws Image files designated by the Render_Component
-        //quad_image_ptr = my_qt.drawQuadTree(nullptr, Vector2D(0,0), 0);
-        //raylib::Texture qt_tex(*quad_image_ptr); 
-        //qt_tex.Draw();        
-        Render_System_NonExclusive(my_world);
+        Render_System(my_world);
         EndDrawing();
-
-        //qt_tex.Unload(); 
         
     }
 
