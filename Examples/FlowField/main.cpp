@@ -23,6 +23,7 @@
 #include "Controller.hpp"
 #include "Collision.hpp"
 #include "FlowFieldVisual.hpp"
+#include "ParticleVisual.hpp"
 
 #include "Vector2D.hpp"
 #include "./ECS/components/Rotation_comp.hpp"
@@ -36,8 +37,8 @@
 #include "./ECS/components/Collision_comp.hpp"
 #include "./ECS/components/Controller_comp.hpp"
 #include "./ECS/components/Vector_comp.hpp"
+#include "./ECS/components/Particle_comp.hpp"
 
-#include "QuadTree.hpp"
 
 #define WORLD_RADIUS (SCREEN_WIDTH_METERS/2)
 
@@ -87,12 +88,12 @@ static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree &qt){
 */
 
 
-Vector2D ODE_System(Vector2D x){
+Vector2D ODE_Function(Vector2D x){
     
     Vector2D x_dot = Vector2D(0.0, 0.0);
 
-    x_dot.x = -x.x;
-    x_dot.y = -x.y; 
+    x_dot.x = x.y;
+    x_dot.y = -0.5*x.x - x.y; 
 
     return x_dot;
 }
@@ -124,6 +125,7 @@ int main() {
     my_world.register_component<Collision_Component>();
     my_world.register_component<Rotation_Component>();
     my_world.register_component<Vector_Component>(); 
+    my_world.register_component<Particle_Component>(); 
     
     int entity_id = 1; 
     
@@ -132,7 +134,7 @@ int main() {
             Position_Component init_pos_val     = {entity_id, Vector2D(x, y)};
 
             // Find the tangent rotation direction
-            Vector2D tangent = ODE_System(Vector2D(x, y));
+            Vector2D tangent = ODE_Function(Vector2D(x, y));
             float angle = (180.0/3.14159) * std::atan2(tangent.y, tangent.x);
 
             Vector_Component    init_vec_val    = {entity_id, tangent};
@@ -147,20 +149,28 @@ int main() {
             entity_id++;
         } 
     }
-
+    
+    // For this example, this only needs to run once.
     FlowField_Visualization_System(my_world);
-   
+    
+    Particle_Component init_particle_flag = {entity_id};
+    Position_Component init_particle_pos = {entity_id, Vector2D(-2.0, -2.0)};
+    Rotation_Component init_rot_val      = {entity_id, 0.0}; 
+    Render_Component init_render_val     = {entity_id, "./misc/BlueCirc.png",
+                                            320, 320, 20, 20}; // x, y, h, w; 
+    
+    my_world.add_component<Particle_Component>(init_particle_flag);
+    my_world.add_component<Position_Component>(init_particle_pos);
+    my_world.add_component<Render_Component>(init_render_val);
+    my_world.add_component<Rotation_Component>(init_rot_val);  
+    
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
+        Position_Component* pos_comp_ptr = my_world.get_component<Position_Component>(entity_id); 
+        pos_comp_ptr->position += 0.0167*ODE_Function(pos_comp_ptr->position); 
+        
+        Particle_Visualization_System(my_world);
 
-        /*for (auto it = my_world.get_component_begin<Rotation_Component>(); 
-              it < my_world.get_component_end<Rotation_Component>(); it++){
-            
-            my_world.get_component<Rotation_Component>(it->entity_id)->angle +=0.2;
-    
-
-        }*/ 
-         
         BeginDrawing();
         ClearBackground(BLACK);
         Render_System(my_world);
