@@ -24,6 +24,7 @@
 #include "Collision.hpp"
 #include "FlowFieldVisual.hpp"
 #include "ParticleVisual.hpp"
+#include "ODE_System.hpp"
 
 #include "Vector2D.hpp"
 #include "./ECS/components/Rotation_comp.hpp"
@@ -38,7 +39,7 @@
 #include "./ECS/components/Controller_comp.hpp"
 #include "./ECS/components/Vector_comp.hpp"
 #include "./ECS/components/Particle_comp.hpp"
-
+#include "./ECS/components/ODE_comp.hpp"
 
 #define WORLD_RADIUS (SCREEN_WIDTH_METERS/2)
 
@@ -88,6 +89,7 @@ static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree &qt){
 */
 
 
+// Default ODE Function
 Vector2D ODE_Function(Vector2D x){
     
     Vector2D x_dot = Vector2D(0.0, 0.0);
@@ -122,11 +124,13 @@ int main() {
     
     my_world.register_component<Render_Component>();
     my_world.register_component<Position_Component>();
+    my_world.register_component<Motion_Component>(); 
     my_world.register_component<Collision_Component>();
     my_world.register_component<Rotation_Component>();
     my_world.register_component<Vector_Component>(); 
     my_world.register_component<Particle_Component>(); 
-    
+    my_world.register_component<ODE_Component>();
+
     int entity_id = 1; 
     
     for(float x = -(SCREEN_WIDTH_METERS/2); x <= (SCREEN_WIDTH_METERS/2); x+= 1.0){
@@ -153,22 +157,40 @@ int main() {
     // For this example, this only needs to run once.
     FlowField_Visualization_System(my_world);
     
-    Particle_Component init_particle_flag = {entity_id};
-    Position_Component init_particle_pos = {entity_id, Vector2D(-2.0, -2.0)};
-    Rotation_Component init_rot_val      = {entity_id, 0.0}; 
-    Render_Component init_render_val     = {entity_id, "./misc/BlueCirc.png",
+    int euler_id = entity_id;
+    Particle_Component init_particle_flag = {euler_id};
+    Position_Component init_particle_pos = {euler_id, Vector2D(-2.0, -2.0)};
+    Rotation_Component init_rot_val      = {euler_id, 0.0}; 
+    Render_Component init_render_val     = {euler_id, "./misc/RedCirc.png",
                                             320, 320, 20, 20}; // x, y, h, w; 
-    
+    ODE_Component init_ode_val           = {euler_id, INT_METHOD::EULER, &ODE_Function};
+
     my_world.add_component<Particle_Component>(init_particle_flag);
     my_world.add_component<Position_Component>(init_particle_pos);
     my_world.add_component<Render_Component>(init_render_val);
     my_world.add_component<Rotation_Component>(init_rot_val);  
+    my_world.add_component<ODE_Component>(init_ode_val); 
+    
+    entity_id++;
+    int rk_id = entity_id;
+    Particle_Component init_particle_flag1 = {rk_id};
+    Position_Component init_particle_pos1 = {rk_id, Vector2D(-1.0, -2.0)};
+    Rotation_Component init_rot_val1      = {rk_id, 0.0}; 
+    Render_Component init_render_val1     = {rk_id, "./misc/BlueCirc.png",
+                                            320, 320, 20, 20}; // x, y, h, w; 
+    
+    ODE_Component init_ode_val1           = {rk_id, INT_METHOD::RK4, &ODE_Function}; 
+    my_world.add_component<Particle_Component>(init_particle_flag1);
+    my_world.add_component<Position_Component>(init_particle_pos1);
+    my_world.add_component<Render_Component>(init_render_val1);
+    my_world.add_component<Rotation_Component>(init_rot_val1); 
+    my_world.add_component<ODE_Component>(init_ode_val1);
     
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
-        Position_Component* pos_comp_ptr = my_world.get_component<Position_Component>(entity_id); 
-        pos_comp_ptr->position += 0.0167*ODE_Function(pos_comp_ptr->position); 
         
+        ODE_System(my_world, TEMP_DT);
+
         Particle_Visualization_System(my_world);
 
         BeginDrawing();
