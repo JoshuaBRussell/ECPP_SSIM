@@ -11,6 +11,7 @@
 
 #include <raylib-cpp.hpp>
 
+#include "Newtonian_Constraint_Sys.hpp"
 #include "main.hpp"
 
 #include "ECSManager.hpp"
@@ -24,9 +25,9 @@
 #include "Collision.hpp"
 #include "FlowFieldVisual.hpp"
 #include "ParticleVisual.hpp"
-#include "ODE_System.hpp"
 
 #include "Vector2D.hpp"
+#include "Vector.hpp"
 #include "./ECS/components/Rotation_comp.hpp"
 #include "./ECS/components/PositionZ1_comp.hpp"
 #include "./ECS/components/Position_comp.hpp"
@@ -90,14 +91,18 @@ static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree &qt){
 
 
 // Default ODE Function
-Vector2D ODE_Function(Vector2D x){
+// state: {pos_x, vel_x, pos_y, vel_y}
+// input: {acc_x, acc_y}
+Vector<4> ODE_Function(Vector<4> state, Vector2D input){
     
-    Vector2D x_dot = Vector2D(0.0, 0.0);
-
-    x_dot.x = x.y;
-    x_dot.y = -0.5*x.x - x.y; 
-
-    return x_dot;
+    Vector<4> state_dot; // The derivative of state
+    
+    state_dot[0] = state[1];
+    state_dot[1] = input.x; 
+    state_dot[2] = state[3]; 
+    state_dot[3] = input.y;
+    
+    return state_dot;
 }
 
 
@@ -106,7 +111,6 @@ int main() {
     // Initialization
     raylib::Color textColor(LIGHTGRAY);
     raylib::Window w(SCREEN_WIDTH_IN_PIXELS, SCREEN_HEIGHT_IN_PIXELS, WINDOW_NAME);
-    raylib::Mouse Mouse;
     
     SetTargetFPS(TARGET_FPS); 
      
@@ -124,6 +128,7 @@ int main() {
     
     my_world.register_component<Render_Component>();
     my_world.register_component<Position_Component>();
+    my_world.register_component<Velocity_Component>(); 
     my_world.register_component<Motion_Component>(); 
     my_world.register_component<Collision_Component>();
     my_world.register_component<Rotation_Component>();
@@ -138,10 +143,11 @@ int main() {
             Position_Component init_pos_val     = {entity_id, Vector2D(x, y)};
 
             // Find the tangent rotation direction
-            Vector2D tangent = ODE_Function(Vector2D(x, y));
-            float angle = (180.0/3.14159) * std::atan2(tangent.y, tangent.x);
+            Vector<4> vec;
+            Vector<4> tangent = ODE_Function(vec, Vector2D(x, y));
+            float angle = (180.0/3.14159) * std::atan2(tangent[2], tangent[0]);
 
-            Vector_Component    init_vec_val    = {entity_id, tangent};
+            Vector_Component    init_vec_val    = {entity_id, Vector2D(tangent[0], tangent[2])};
             Rotation_Component init_rot_val     = {entity_id, angle}; 
             Render_Component init_render_val    = {entity_id, "./misc/RedArrow.png",
                                                    320, 320, 50, 20}; // x, y, h, w
@@ -157,6 +163,7 @@ int main() {
     // For this example, this only needs to run once.
     FlowField_Visualization_System(my_world);
     
+    /*
     int euler_id = entity_id;
     Particle_Component init_particle_flag = {euler_id};
     Position_Component init_particle_pos = {euler_id, Vector2D(-2.0, -2.0)};
@@ -170,26 +177,32 @@ int main() {
     my_world.add_component<Render_Component>(init_render_val);
     my_world.add_component<Rotation_Component>(init_rot_val);  
     my_world.add_component<ODE_Component>(init_ode_val); 
-    
+    */
+
     entity_id++;
     int rk_id = entity_id;
     Particle_Component init_particle_flag1 = {rk_id};
     Position_Component init_particle_pos1 = {rk_id, Vector2D(-1.0, -2.0)};
+    Velocity_Component init_particle_vel1 = {rk_id, Vector2D(0.0, +1.0)}; 
     Rotation_Component init_rot_val1      = {rk_id, 0.0}; 
     Render_Component init_render_val1     = {rk_id, "./misc/BlueCirc.png",
                                             320, 320, 20, 20}; // x, y, h, w; 
-    
-    ODE_Component init_ode_val1           = {rk_id, INT_METHOD::RK4, &ODE_Function}; 
+    ODE_Component init_ode_val1           = {rk_id, INT_METHOD::EULER, &ODE_Function}; 
+
     my_world.add_component<Particle_Component>(init_particle_flag1);
     my_world.add_component<Position_Component>(init_particle_pos1);
+    my_world.add_component<Velocity_Component>(init_particle_vel1);
     my_world.add_component<Render_Component>(init_render_val1);
     my_world.add_component<Rotation_Component>(init_rot_val1); 
     my_world.add_component<ODE_Component>(init_ode_val1);
+     
     
+    
+
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
         
-        ODE_System(my_world, TEMP_DT);
+        Newtonian_Constraint_System(my_world, TEMP_DT);
 
         Particle_Visualization_System(my_world);
 
