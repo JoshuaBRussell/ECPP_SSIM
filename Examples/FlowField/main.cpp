@@ -136,18 +136,19 @@ int main() {
     my_world.register_component<Particle_Component>(); 
     my_world.register_component<ODE_Component>();
 
-    int entity_id = 1; 
-    
+    int entity_id = 1;
+    // Display the Acceleration Field
+    Vector2D global_acc = Vector2D(0.0, -0.81);  
     for(float x = -(SCREEN_WIDTH_METERS/2); x <= (SCREEN_WIDTH_METERS/2); x+= 1.0){
         for(float y = -(SCREEN_HEIGHT_METERS/2); y <= (SCREEN_HEIGHT_METERS/2); y+= 1.0){  
             Position_Component init_pos_val     = {entity_id, Vector2D(x, y)};
 
             // Find the tangent rotation direction
             Vector<4> vec;
-            Vector<4> tangent = ODE_Function(vec, Vector2D(x, y));
-            float angle = (180.0/3.14159) * std::atan2(tangent[2], tangent[0]);
+            Vector<4> tangent = ODE_Function(vec, global_acc);
+            float angle = (180.0/3.14159) * std::atan2(tangent[3], tangent[1]);
 
-            Vector_Component    init_vec_val    = {entity_id, Vector2D(tangent[0], tangent[2])};
+            Vector_Component    init_vec_val    = {entity_id, Vector2D(tangent[3], tangent[1])};
             Rotation_Component init_rot_val     = {entity_id, angle}; 
             Render_Component init_render_val    = {entity_id, "./misc/RedArrow.png",
                                                    320, 320, 50, 20}; // x, y, h, w
