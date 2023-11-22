@@ -65,22 +65,40 @@ void Newtonian_Constraint_System(ECS_Manager &world, float dt){
             case INT_METHOD::RK4: {
 
                 // Runge-Kutta | 4th Order
-                std::cout << "Not Implemented" << std::endl; 
-                //Vector4D state_vec;
-                //Vector2D K1 = ODE_Function(state_vec, acc_net);
-                //Vector2D K2 = ODE_Function(pos_comp_ptr->position + (dt/2)*K1);
-                //Vector2D K3 = ODE_Function(pos_comp_ptr->position + (dt/2)*K2);
-                //Vector2D K4 = ODE_Function(pos_comp_ptr->position + (dt)*K3);
-                //pos_comp_ptr->position += (dt/6)*(K1 + 2*K2 + 2*K3 + K4);        
+                Vector<4> state_vec;
+                state_vec[0] = pos_vec.x;
+                state_vec[1] = vel_vec.x; 
+                state_vec[2] = pos_vec.y; 
+                state_vec[3] = vel_vec.y;
+                
+                Vector<4> K1 = ODE_Function(state_vec            , acc_net);
+                Vector<4> K2 = ODE_Function(state_vec + (dt/2)*K1, acc_net);
+                Vector<4> K3 = ODE_Function(state_vec + (dt/2)*K2, acc_net);
+                Vector<4> K4 = ODE_Function(state_vec + (dt)*K3  , acc_net);
+                
+                state_vec = state_vec + (dt/6)*(K1 + 2*K2 + 2*K3 + K4);
+
+                pos_comp_ptr->position = Vector2D(state_vec[0], state_vec[2]);
+                vel_comp_ptr->velocity = Vector2D(state_vec[1], state_vec[3]);
+                
                 break; 
                 }
             
             default: {
                 
-                // Euler Method  
-                //pos_comp_ptr->position += dt*(*ODE_Function)(pos_comp_ptr->position);
-                break;
+                // Euler Method
+                Vector<4> state_vec;
+                state_vec[0] = pos_vec.x;
+                state_vec[1] = vel_vec.x; 
+                state_vec[2] = pos_vec.y; 
+                state_vec[3] = vel_vec.y;
+                
+                state_vec = state_vec + dt*(*ODE_Function)(state_vec, acc_net);
+                
+                pos_comp_ptr->position = Vector2D(state_vec[0], state_vec[2]);
+                vel_comp_ptr->velocity = Vector2D(state_vec[1], state_vec[3]);
 
+                break;
                 }
         } 
     }
