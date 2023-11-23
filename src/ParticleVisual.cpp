@@ -1,12 +1,11 @@
-#include "FlowFieldVisual.hpp"
+#include "ParticleVisual.hpp"
 #include "ECSManager.hpp"
 
 #include "Vector2D.hpp"
 
+#include "./components/Particle_comp.hpp"
 #include "./components/Position_comp.hpp"
 #include "./components/Render_comp.hpp"
-#include "./components/Rotation_comp.hpp"
-#include "./components/Vector_comp.hpp"
 
 #include "../Examples/FlowField/main.hpp"
 
@@ -48,34 +47,15 @@ static float world2screen_Y(float y){
     return -world2screenscale_Y(y) + SCREEN_HEIGHT_IN_PIXELS;
 }
 
-void FlowField_Visualization_System(ECS_Manager &world){
+void Particle_Visualization_System(ECS_Manager &world){
     
-    
-    float max_len = 0.0;
-    for (auto it = world.get_component_begin<Vector_Component>(); 
-              it < world.get_component_end<Vector_Component>(); it++){
-        Vector2D vec = world.get_component<Vector_Component>(it->entity_id)->vec; 
-        float vec_mag = std::sqrt(vec.x*vec.x + vec.y*vec.y);
-
-        if (vec_mag > max_len){
-            max_len = vec_mag;
-        }
-    }
-    
-    for (auto it = world.get_component_begin<Vector_Component>(); 
-              it < world.get_component_end<Vector_Component>(); it++){
+    for (auto it = world.get_component_begin<Particle_Component>(); 
+              it < world.get_component_end<Particle_Component>(); it++){
         // Take Physical coords. and convert to a location on the screen
         Vector2D physical_pos = world.get_component<Position_Component>(it->entity_id)->position;
         
-        Vector2D vec = world.get_component<Vector_Component>(it->entity_id)->vec;
-        float vec_mag = std::sqrt(vec.x*vec.x + vec.y*vec.y);
-
-        float scale = vec_mag/max_len;
-        
         world.get_component<Render_Component>(it->entity_id)->x = world2screen_X(physical_pos.x);
         world.get_component<Render_Component>(it->entity_id)->y = world2screen_Y(physical_pos.y);
-        world.get_component<Render_Component>(it->entity_id)->width *= scale;
-        world.get_component<Render_Component>(it->entity_id)->height *= scale; 
     }
 }
 
