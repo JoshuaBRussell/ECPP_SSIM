@@ -167,8 +167,8 @@ int main() {
     
     int euler_id = entity_id;
     Particle_Component init_particle_flag = {euler_id};
-    Position_Component init_particle_pos  = {euler_id, Vector2D(-2.0, 2.0)};
-    Velocity_Component init_particle_vel = {euler_id, Vector2D(0.2, +1.0)}; 
+    Position_Component init_particle_pos  = {euler_id, Vector2D(-1.0, 0.0)};
+    Velocity_Component init_particle_vel = {euler_id, Vector2D(0.0, 0.2)}; 
     Rotation_Component init_rot_val       = {euler_id, 0.0}; 
     Render_Component init_render_val      = {euler_id, "./misc/RedCirc.png",
                                             320, 320, 20, 20}; // x, y, h, w; 
@@ -185,8 +185,8 @@ int main() {
     entity_id++;
     int rk_id = entity_id;
     Particle_Component init_particle_flag1 = {rk_id};
-    Position_Component init_particle_pos1 = {rk_id, Vector2D(1.0, 2.0)};
-    Velocity_Component init_particle_vel1 = {rk_id, Vector2D(1.0, +1.0)}; 
+    Position_Component init_particle_pos1 = {rk_id, Vector2D(-1.0, 0.0)};
+    Velocity_Component init_particle_vel1 = {rk_id, Vector2D(0.0, 0.2)}; 
     Rotation_Component init_rot_val1      = {rk_id, 0.0}; 
     Render_Component init_render_val1     = {rk_id, "./misc/BlueCirc.png",
                                             320, 320, 20, 20}; // x, y, h, w; 
@@ -205,7 +205,9 @@ int main() {
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
         
-        Newtonian_Constraint_System(my_world, TEMP_DT);
+        for (int i = 0; i < 25; i ++){
+            Newtonian_Constraint_System(my_world, TEMP_DT/25);
+        }
 
         Particle_Visualization_System(my_world);
 

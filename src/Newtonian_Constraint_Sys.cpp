@@ -41,7 +41,7 @@ void Newtonian_Constraint_System(ECS_Manager &world, float dt){
 
         Vector2D Force_Constraint = lambda * pos_vec;
 
-        Vector2D Force_Net = Force_App; //+ Force_Constraint;
+        Vector2D Force_Net = Force_App + Force_Constraint;
         Vector2D acc_net = Force_Net; // m = 1 
 
         switch (method) {
