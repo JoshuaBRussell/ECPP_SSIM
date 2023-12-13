@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <math.h>
+#include <cassert>
 
 template<unsigned int N>
 class Vector {
@@ -14,6 +15,7 @@ class Vector {
     }
 
     Vector(double *elements, int len){
+        assert(len == N);
         for (int i = 0; i < len; i++){
             x[i] = elements[i]; 
         }
