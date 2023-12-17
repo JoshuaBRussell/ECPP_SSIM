@@ -54,48 +54,6 @@
 
 #define WINDOW_NAME "Flow Field Visualization"
 
-using Eigen::Matrix3f;
-using Eigen::Vector3f; 
-
-
-/*
-static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree &qt){
-    
-    int entity_id = my_world.create_entity();      
-    
-    PositionZ1_Component init_posz1_val = {entity_id, pos};
-    Position_Component init_pos_val     = {entity_id, pos};
-    //Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.02)*0.1)};
-    float vx = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/3.0)) - 1.5; 
-    float vy = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/3.0)) - 1.5;
-
-    Velocity_Component init_vel_val     = {entity_id, Vector2D(vx, vy)};  
-    Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, 0.0)}; 
-    
-    Controller_Component init_contr_val = {entity_id, 5.0, 0.0, Vector2D(2.0, 2.0)};
-    
-    Motion_Component init_mot_val       = {entity_id}; 
-    Render_Component init_render_val    = {entity_id, "./misc/RedCirc.png"};
-    Boundary_Component init_bounds_val  = {entity_id};
-    Collision_Component init_coll_comp  = {entity_id, OBJECT_RADIUS};
-    
-    my_world.add_component<PositionZ1_Component>(init_posz1_val);
-    my_world.add_component<Position_Component>(init_pos_val);
-    my_world.add_component<Velocity_Component>(init_vel_val);
-    my_world.add_component<Acceleration_Component>(init_acc_val); 
-
-    my_world.add_component<Controller_Component>(init_contr_val);
-
-    my_world.add_component<Motion_Component>(init_mot_val);
-    my_world.add_component<Render_Component>(init_render_val); 
-    my_world.add_component<Boundary_Component>(init_bounds_val);
-    my_world.add_component<Collision_Component>(init_coll_comp);
-
-    qt.add_element(entity_id, pos); 
-}
-*/
-
-
 // Default ODE Function
 // state: {pos_x, vel_x, pos_y, vel_y}
 // input: {acc_x, acc_y}
@@ -205,23 +163,9 @@ int main() {
     my_world.add_component<Rotation_Component>(init_rot_val1); 
     my_world.add_component<ODE_Component>(init_ode_val1);
      
-    
-    
-
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
-        Matrix3f A;
-        Vector3f b;
 
-        A << 1,2,3, 4,5,6, 7,8,10;
-        b << 3,3,4;
-
-        std::cout << A << std::endl;
-        std::cout << b << std::endl;
-
-        Vector3f x = A.colPivHouseholderQr().solve(b);
-        std::cout << x << std::endl; 
-        
         for (int i = 0; i < 25; i ++){
             Newtonian_Constraint_System(my_world, TEMP_DT/25);
         }
