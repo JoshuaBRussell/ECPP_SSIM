@@ -123,3 +123,10 @@ flow_field: $(objects) flow_field_main.o
 
 flow_field_main.o:
 	$(CXX) -c $(compileFlags) Examples/FlowField/main.cpp -o bin/flow_field_main.o
+
+# Link the program and create the executable
+pendulum: $(objects) pendulum_main.o
+	$(CXX) $(objects) bin/pendulum_main.o -o $(target) $(linkFlags)
+
+pendulum_main.o:
+	$(CXX) -c $(compileFlags) Examples/Pendulum/main.cpp -o bin/pendulum_main.o
