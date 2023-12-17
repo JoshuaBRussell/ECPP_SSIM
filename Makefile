@@ -15,7 +15,7 @@ target := $(buildDir)/$(executable)
 sources := $(call rwildcard,src/,*.cpp)
 objects := $(patsubst src/%, $(buildDir)/%, $(patsubst %.cpp, %.o, $(sources)))
 depends := $(patsubst %.o, %.d, $(objects))
-compileFlags := -std=c++17 -I include -I ./include/ECS -I ./include/ECS/components -g -Wall
+compileFlags := -std=c++17 -I include -I ./include/ECS -I ./include/ECS/components -I /usr/include/eigen3/ -g -Wall
 linkFlags = -L lib/$(platform) -l raylib
 
 # Check for Windows
