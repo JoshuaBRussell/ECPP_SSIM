@@ -7,8 +7,6 @@
 #include "ECS.hpp"
 #include "ECSManager.hpp"
 
-#include "Vector2D.hpp"
-
 #include "./components/Motion_comp.hpp"
 #include "./components/Render_comp.hpp"
 #include "./components/Position_comp.hpp"
@@ -29,11 +27,11 @@ static double screen_height_in_meters;
 
 
 
-Vector2D Input_get_pos_from_mouse(raylib::Mouse &mouse_instance){
+raylib::Vector2 Input_get_pos_from_mouse(raylib::Mouse &mouse_instance){
     double mouse_x = mouse_instance.GetPosition().x;
     double mouse_y = mouse_instance.GetPosition().y;
     
-    return Vector2D(mouse_x, mouse_y);
+    return raylib::Vector2(mouse_x, mouse_y);
 }
 
 bool Input_is_button_pressed(raylib::Mouse &mouse_instance, int button){

@@ -3,7 +3,6 @@
 #include <Eigen/Dense>
 
 #include "ECSManager.hpp"
-#include "Vector2D.hpp"
 
 void Newtonian_System_init();
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Vector.hpp"
-#include "Vector2D.hpp"
 
 enum class INT_METHOD {
     EULER,

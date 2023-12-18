@@ -30,7 +30,7 @@ void ODE_System_2D(ECS_Manager &world, float dt){
             case INT_METHOD::EULER:{ 
                 
                 // Euler Method 
-                pos_comp_ptr->position += dt*(*ODE_Function)(pos_comp_ptr->position, input);
+                pos_comp_ptr->position += dt*ODE_Function(pos_comp_ptr->position, input);
                 break; 
                 }
                  
