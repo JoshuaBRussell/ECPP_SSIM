@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Vector2D.hpp"
+#include <Eigen/Core>
 
 struct Acceleration_Component {
 
     int entity_id;
 
-    Vector2D accel;
+    Eigen::Vector2f accel; // {x, y}
 
 };

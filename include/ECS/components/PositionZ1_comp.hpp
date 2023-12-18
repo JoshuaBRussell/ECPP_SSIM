@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Vector2D.hpp"
+#include <Eigen/Core>
 
 struct PositionZ1_Component {
     
     int entity_id;
 
-    Vector2D position;
+    Eigen::Vector2f position; // {x, y}
 
 };

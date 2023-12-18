@@ -1,7 +1,7 @@
 #include "Boids.hpp"
 
 #include <algorithm>
-
+#include <Eigen/Core>
 
 #include "ECSManager.hpp"
 
@@ -19,9 +19,9 @@ void Boids_QT(ECS_Manager &world, double dt, QuadTree &qt){
     for (auto coll_A = world.get_component_begin<Boundary_Component>(); 
               coll_A < world.get_component_end<Boundary_Component>(); coll_A++){
 
-        Vector2D seperation_vel_delta = Vector2D(0.0, 0.0);
-        Vector2D neighbor_vel_sum     = Vector2D(0.0, 0.0);
-        Vector2D neighbor_pos_sum     = Vector2D(0.0, 0.0);
+        Eigen::Vector2f seperation_vel_delta = Eigen::Vector2f(0.0, 0.0);
+        Eigen::Vector2f neighbor_vel_sum     = Eigen::Vector2f(0.0, 0.0);
+        Eigen::Vector2f neighbor_pos_sum     = Eigen::Vector2f(0.0, 0.0);
 
         int neighbor_count = 0;
 
@@ -39,8 +39,8 @@ void Boids_QT(ECS_Manager &world, double dt, QuadTree &qt){
                 Position_Component *pos_comp_B_ptr = world.get_component<Position_Component>(coll_B_ID);   
                 
                 // Find distance between to OBJECT_RADIUS
-                Vector2D disp_vec = pos_comp_A_ptr->position - pos_comp_B_ptr->position;
-                double dist = disp_vec.mag();
+                Eigen::Vector2f disp_vec = pos_comp_A_ptr->position - pos_comp_B_ptr->position;
+                double dist = disp_vec.norm();
                  
                 if (dist <= VISUAL_RADIUS){
                     
@@ -65,14 +65,14 @@ void Boids_QT(ECS_Manager &world, double dt, QuadTree &qt){
                 vel_comp_A_ptr->velocity += ALIGNMENT_GAIN*((1.0/neighbor_count)*neighbor_vel_sum);  
                 
                 // Cohesion
-                Vector2D neighbor_pos_avg = (1.0/neighbor_count)*neighbor_pos_sum;
+                Eigen::Vector2f neighbor_pos_avg = (1.0/neighbor_count)*neighbor_pos_sum;
                 vel_comp_A_ptr->velocity += COHESION_GAIN*(neighbor_pos_avg - pos_comp_A_ptr->position);
 
                 neighbor_count = 0;  
             }
 
             // Cap Velocity
-            double vel_mag = vel_comp_A_ptr->velocity.mag(); 
+            double vel_mag = vel_comp_A_ptr->velocity.norm(); 
             if (vel_mag > MAX_BOID_VEL){
                 vel_comp_A_ptr->velocity = (MAX_BOID_VEL/vel_mag)*(vel_comp_A_ptr->velocity);
             }
@@ -95,22 +95,22 @@ void Boids_EdgeAvoidance(ECS_Manager &world, double dt){
         Position_Component *pos_comp_A_ptr = world.get_component<Position_Component>(coll_A->entity_id); 
 
         double VEL_DELTA_MAG = 0.1;
-        Vector2D pos = pos_comp_A_ptr->position;
+        Eigen::Vector2f pos = pos_comp_A_ptr->position;
         double x_vel_delta = 0.0;
         double y_vel_delta = 0.0;
-        if(pos.x < 0.5){
+        if(pos(0) < 0.5){
             x_vel_delta = VEL_DELTA_MAG; 
-        } else if (pos.x > 3.5){
+        } else if (pos(0) > 3.5){
             x_vel_delta = -VEL_DELTA_MAG;
         }
 
-        if(pos.y < 0.5){
+        if(pos(1) < 0.5){
             y_vel_delta = VEL_DELTA_MAG; 
-        } else if (pos.y > 3.5){
+        } else if (pos(1) > 3.5){
             y_vel_delta = -VEL_DELTA_MAG;
         }
 
-        vel_comp_A_ptr->velocity += Vector2D(x_vel_delta, y_vel_delta);
+        vel_comp_A_ptr->velocity += Eigen::Vector2f(x_vel_delta, y_vel_delta);
 
     }
 }

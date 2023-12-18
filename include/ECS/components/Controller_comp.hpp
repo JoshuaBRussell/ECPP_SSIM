@@ -1,6 +1,6 @@
 #pragma once 
 
-#include "Vector2D.hpp"
+#include <Eigen/Core>
 
 struct Controller_Component {
     
@@ -9,5 +9,5 @@ struct Controller_Component {
     double K_Gain;
     double B_Gain;
 
-    Vector2D input;
+    Eigen::Vector2f input;
 };

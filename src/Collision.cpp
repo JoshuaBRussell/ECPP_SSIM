@@ -1,5 +1,6 @@
 #include "Collision.hpp"
 
+#include <Eigen/Core>
 
 #include "ECSManager.hpp"
 
@@ -22,16 +23,16 @@ void Collision_System(ECS_Manager &world, double dt){
             if (coll_A != coll_B){
                 Position_Component *pos_comp_B_ptr = world.get_component<Position_Component>(coll_B->entity_id);   
                 // Find distance between to OBJECT_RADIUS
-                Vector2D disp_vec = pos_comp_A_ptr->position - pos_comp_B_ptr->position;
-                double dist = disp_vec.mag();
+                Eigen::Vector2f disp_vec = pos_comp_A_ptr->position - pos_comp_B_ptr->position;
+                double dist = disp_vec.norm();
                 
                 // If the distance is less the sum of their radii -> collision occured
                 double obj_radius = world.get_component<Collision_Component>(coll_B->entity_id)->radius;  
                 
                 if ( dist <= 2*obj_radius){
-                    Vector2D norm_vec = (1/dist)*(disp_vec);
+                    Eigen::Vector2f norm_vec = (1/dist)*(disp_vec);
 
-                    Vector2D temp = (2*obj_radius - dist) * norm_vec;
+                    Eigen::Vector2f temp = (2*obj_radius - dist) * norm_vec;
                     
                     pos_comp_A_ptr->position += temp;
                     pos_comp_B_ptr->position -= temp; 
@@ -41,7 +42,7 @@ void Collision_System(ECS_Manager &world, double dt){
                     Velocity_Component *vel_comp_A_ptr = world.get_component<Velocity_Component>(coll_A->entity_id);  
                     Velocity_Component *vel_comp_B_ptr = world.get_component<Velocity_Component>(coll_B->entity_id);
                     
-                    Vector2D temp_vel = vel_comp_A_ptr->velocity;
+                    Eigen::Vector2f temp_vel = vel_comp_A_ptr->velocity;
                     vel_comp_A_ptr->velocity = vel_comp_B_ptr->velocity;
                     vel_comp_B_ptr->velocity = temp_vel; 
                     
@@ -72,16 +73,16 @@ void Collision_System_QT(ECS_Manager &world, double dt, QuadTree &qt){
             if (coll_A->entity_id != coll_B_ID){
                 Position_Component *pos_comp_B_ptr = world.get_component<Position_Component>(coll_B_ID);   
                 // Find distance between to OBJECT_RADIUS
-                Vector2D disp_vec = pos_comp_A_ptr->position - pos_comp_B_ptr->position;
-                double dist = disp_vec.mag();
+                Eigen::Vector2f disp_vec = pos_comp_A_ptr->position - pos_comp_B_ptr->position;
+                double dist = disp_vec.norm();
                 // If the distance is less the sum of their radii -> collision occured
 
                 double obj_radius = world.get_component<Collision_Component>(coll_B_ID)->radius;
                 
                 if ( dist <= 2*obj_radius){
-                    Vector2D norm_vec = (1/dist)*(disp_vec);
+                    Eigen::Vector2f norm_vec = (1/dist)*(disp_vec);
 
-                    Vector2D temp = (2*obj_radius - dist) * norm_vec;
+                    Eigen::Vector2f temp = (2*obj_radius - dist) * norm_vec;
                     
                     pos_comp_A_ptr->position += temp;
                     pos_comp_B_ptr->position -= temp; 
@@ -91,7 +92,7 @@ void Collision_System_QT(ECS_Manager &world, double dt, QuadTree &qt){
                     Velocity_Component *vel_comp_A_ptr = world.get_component<Velocity_Component>(coll_A->entity_id);  
                     Velocity_Component *vel_comp_B_ptr = world.get_component<Velocity_Component>(coll_B_ID);
                     
-                    Vector2D temp_vel = vel_comp_A_ptr->velocity;
+                    Eigen::Vector2f temp_vel = vel_comp_A_ptr->velocity;
                     vel_comp_A_ptr->velocity = vel_comp_B_ptr->velocity;
                     vel_comp_B_ptr->velocity = temp_vel; 
                     

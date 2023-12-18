@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Vector2D.hpp"
+#include <Eigen/Core>
 
 struct Vector_Component {
     
     int entity_id;
 
-    Vector2D vec;
+    Eigen::Vector2f vec;
 
 };

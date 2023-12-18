@@ -28,7 +28,6 @@
 #include "FlowFieldVisual.hpp"
 #include "ParticleVisual.hpp"
 
-#include "Vector2D.hpp"
 #include "Vector.hpp"
 #include "./ECS/components/Rotation_comp.hpp"
 #include "./ECS/components/PositionZ1_comp.hpp"
@@ -58,20 +57,7 @@ using Eigen::Matrix3f;
 using Eigen::Vector3f; 
 
 
-// Default ODE Function
-// state: {pos_x, vel_x, pos_y, vel_y}
-// input: {acc_x, acc_y}
-Vector<4> ODE_Function(Vector<4> state, Vector2D input){
-    
-    Vector<4> state_dot; // The derivative of state
-    
-    state_dot[0] = state[1];
-    state_dot[1] = input.x; 
-    state_dot[2] = state[3]; 
-    state_dot[3] = input.y;
-    
-    return state_dot;
-}
+
 
 
 int main() {
@@ -106,17 +92,17 @@ int main() {
 
     int entity_id = 1;
     // Display the Acceleration Field
-    Vector2D global_acc = Vector2D(0.0, -0.81);  
+    Eigen::Vector2f global_acc = Eigen::Vector2f(0.0, -0.81);  
     for(float x = -(SCREEN_WIDTH_METERS/2); x <= (SCREEN_WIDTH_METERS/2); x+= 1.0){
         for(float y = -(SCREEN_HEIGHT_METERS/2); y <= (SCREEN_HEIGHT_METERS/2); y+= 1.0){  
-            Position_Component init_pos_val     = {entity_id, Vector2D(x, y)};
+            Position_Component init_pos_val     = {entity_id, Eigen::Vector2f(x, y)};
 
             // Find the tangent rotation direction
-            Vector<4> vec;
-            Vector<4> tangent = ODE_Function(vec, global_acc);
+            Eigen::Vector4f vec;
+            Eigen::Vector4f tangent = ODE_Function(vec, global_acc);
             float angle = (180.0/3.14159) * std::atan2(tangent[3], tangent[1]);
 
-            Vector_Component    init_vec_val    = {entity_id, Vector2D(tangent[3], tangent[1])};
+            Vector_Component    init_vec_val    = {entity_id, Eigen::Vector2f(tangent[3], tangent[1])};
             Rotation_Component init_rot_val     = {entity_id, angle}; 
             Render_Component init_render_val    = {entity_id, "./misc/RedArrow.png",
                                                    320, 320, 50, 20}; // x, y, h, w
@@ -135,12 +121,12 @@ int main() {
     
     int euler_id = entity_id;
     Particle_Component init_particle_flag = {euler_id};
-    Position_Component init_particle_pos  = {euler_id, Vector2D(-1.0, 0.0)};
-    Velocity_Component init_particle_vel = {euler_id, Vector2D(0.0, 0.2)}; 
+    Position_Component init_particle_pos  = {euler_id, Eigen::Vector2f(-1.0, 0.0)};
+    Velocity_Component init_particle_vel = {euler_id, Eigen::Vector2f(0.0, 0.2)}; 
     Rotation_Component init_rot_val       = {euler_id, 0.0}; 
     Render_Component init_render_val      = {euler_id, "./misc/RedCirc.png",
                                             320, 320, 20, 20}; // x, y, h, w; 
-    ODE_Component init_ode_val            = {euler_id, INT_METHOD::EULER, &ODE_Function};
+    ODE_Component init_ode_val            = {euler_id, INT_METHOD::EULER};
 
     my_world.add_component<Particle_Component>(init_particle_flag);
     my_world.add_component<Position_Component>(init_particle_pos);
@@ -153,12 +139,12 @@ int main() {
     entity_id++;
     int rk_id = entity_id;
     Particle_Component init_particle_flag1 = {rk_id};
-    Position_Component init_particle_pos1 = {rk_id, Vector2D(-1.0, 0.0)};
-    Velocity_Component init_particle_vel1 = {rk_id, Vector2D(0.0, 0.2)}; 
+    Position_Component init_particle_pos1 = {rk_id, Eigen::Vector2f(-1.0, 0.0)};
+    Velocity_Component init_particle_vel1 = {rk_id, Eigen::Vector2f(0.0, 0.2)}; 
     Rotation_Component init_rot_val1      = {rk_id, 0.0}; 
     Render_Component init_render_val1     = {rk_id, "./misc/BlueCirc.png",
                                             320, 320, 20, 20}; // x, y, h, w; 
-    ODE_Component init_ode_val1           = {rk_id, INT_METHOD::RK4, &ODE_Function}; 
+    ODE_Component init_ode_val1           = {rk_id, INT_METHOD::RK4}; 
 
     my_world.add_component<Particle_Component>(init_particle_flag1);
     my_world.add_component<Position_Component>(init_particle_pos1);
