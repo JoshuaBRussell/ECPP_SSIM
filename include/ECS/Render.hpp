@@ -2,7 +2,6 @@
 
 #include "ECS.hpp"
 #include "ECSManager.hpp"
-#include "Vector2D.hpp"
 
 #include <raylib-cpp.hpp>
 
@@ -14,7 +13,7 @@ struct render_config{
     float screen_height_in_meters; 
 };
 
-Vector2D Input_get_pos_from_mouse(raylib::Mouse &mouse_instance);
+raylib::Vector2 Input_get_pos_from_mouse(raylib::Mouse &mouse_instance);
 bool Input_is_button_pressed(raylib::Mouse &mouse_instance, int button);
 bool Input_should_close();
 

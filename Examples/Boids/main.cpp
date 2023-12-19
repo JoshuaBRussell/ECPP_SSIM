@@ -9,6 +9,8 @@
 
 #include <math.h>
 
+#include <Eigen/Core>
+
 #include <raylib-cpp.hpp>
 
 #include "main.hpp"
@@ -24,7 +26,6 @@
 #include "Collision.hpp"
 #include "Boids.hpp"
 
-#include "Vector2D.hpp"
 #include "./ECS/components/PositionZ1_comp.hpp"
 #include "./ECS/components/Position_comp.hpp"
 #include "./ECS/components/Velocity_comp.hpp"
@@ -50,22 +51,22 @@
 #define WINDOW_NAME "Virtual Bob"
 
 
-static void add_new_ball(ECS_Manager &my_world, Vector2D pos, QuadTree &qt){
+static void add_new_ball(ECS_Manager &my_world, Eigen::Vector2f pos, QuadTree &qt){
     
     int entity_id = my_world.create_entity();      
     
     PositionZ1_Component init_posz1_val = {entity_id, pos};
     Position_Component init_pos_val     = {entity_id, pos};
-    //Velocity_Component init_vel_val     = {entity_id, Vector2D(entity_id*0.1, pow(entity_id, 1.02)*0.1)};
+    //Velocity_Component init_vel_val     = {entity_id, Eigen::Vector2f(entity_id*0.1, pow(entity_id, 1.02)*0.1)};
     float vx = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/3.0)) - 1.5; 
     float vy = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/3.0)) - 1.5;
     vx = 0.0;
     vy = 0.0;
 
-    Velocity_Component init_vel_val     = {entity_id, Vector2D(vx, vy)};  
-    Acceleration_Component init_acc_val = {entity_id, Vector2D(0.0, 0.0)}; 
+    Velocity_Component init_vel_val     = {entity_id, Eigen::Vector2f(vx, vy)};  
+    Acceleration_Component init_acc_val = {entity_id, Eigen::Vector2f(0.0, 0.0)}; 
     
-    Controller_Component init_contr_val = {entity_id, 5.0, 0.0, Vector2D(2.0, 2.0)};
+    Controller_Component init_contr_val = {entity_id, 5.0, 0.0, Eigen::Vector2f(2.0, 2.0)};
     
     Motion_Component init_mot_val       = {entity_id}; 
     Render_Component init_render_val    = {entity_id, "./misc/RedCirc.png"};
@@ -121,7 +122,7 @@ int main() {
     my_world.register_component<Velocity_Component>();
     my_world.register_component<Acceleration_Component>();
     int i = 0;
-    QuadTree my_qt(my_world, Vector2D(0.0, 0.0), Vector2D(4.0, 4.0), 2, 4); 
+    QuadTree my_qt(my_world, Eigen::Vector2f(0.0, 0.0), Eigen::Vector2f(4.0, 4.0), 2, 4); 
     raylib::Image *quad_image_ptr; 
     
     for (int i = 0; i < 0; i++){
@@ -129,14 +130,15 @@ int main() {
         float x = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/3.5)) + 0.25; 
         float y = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/3.5)) + 0.25; 
 
-        add_new_ball(my_world, Vector2D(x, y), my_qt); 
+        add_new_ball(my_world, Eigen::Vector2f(x, y), my_qt); 
     }
 
     while (!w.ShouldClose()){// Detect window close button or ESC key
         
         if (Input_is_button_pressed(Mouse, 0)){
-            Vector2D mouse_pos = Input_get_pos_from_mouse(Mouse);     
-            add_new_ball(my_world, mouse_pos, my_qt);
+            raylib::Vector2 mouse_pos = Input_get_pos_from_mouse(Mouse);     
+            Eigen::Vector2f mouse_pos_conv = Eigen::Vector2f(mouse_pos.x, mouse_pos.y); 
+            add_new_ball(my_world, mouse_pos_conv, my_qt);
         }
         
         
@@ -155,7 +157,7 @@ int main() {
         BeginDrawing();
         ClearBackground(BLACK);
         // Draws Image files designated by the Render_Component
-        //quad_image_ptr = my_qt.drawQuadTree(nullptr, Vector2D(0,0), 0);
+        //quad_image_ptr = my_qt.drawQuadTree(nullptr, Eigen::Vector2f(0,0), 0);
         //raylib::Texture qt_tex(*quad_image_ptr); 
         //qt_tex.Draw();        
         Render_System_NonExclusive(my_world);

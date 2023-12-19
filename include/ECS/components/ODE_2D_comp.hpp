@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vector2D.hpp"
+#include <Eigen/Core>
 
 enum class INT_METHOD {
     EULER,
@@ -12,5 +12,6 @@ struct ODE_2D_Component {
     int entity_id;
 
     INT_METHOD integration_method;
-    Vector2D (*ODE_Function)(Vector2D, Vector2D);
 };
+
+Eigen::Vector2f ODE_Function(Eigen::Vector2f, Eigen::Vector2f);

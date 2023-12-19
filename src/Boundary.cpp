@@ -1,5 +1,7 @@
 #include "Boundary.hpp"
 
+#include <Eigen/Core>
+
 #include "ECSManager.hpp"
 
 #include "./components/Position_comp.hpp"
@@ -15,21 +17,21 @@ void Boundary_System(ECS_Manager &world){
         Position_Component *pos_comp_ptr = world.get_component<Position_Component>(it->entity_id);
         Collision_Component *coll_comp_ptr = world.get_component<Collision_Component>(it->entity_id);
 
-        if((pos_comp_ptr->position.x  - coll_comp_ptr->radius)< 0){
-            pos_comp_ptr->position.x = coll_comp_ptr->radius;
-            world.get_component<Velocity_Component>(it->entity_id)->velocity.x *= -0.75;
+        if((pos_comp_ptr->position(0)  - coll_comp_ptr->radius)< 0){
+            pos_comp_ptr->position(0) = coll_comp_ptr->radius;
+            world.get_component<Velocity_Component>(it->entity_id)->velocity(0) *= -0.75;
         }
-        if(pos_comp_ptr->position.x + coll_comp_ptr->radius> 4.0){
-            pos_comp_ptr->position.x = 4.0 - coll_comp_ptr->radius;
-            world.get_component<Velocity_Component>(it->entity_id)->velocity.x *= -0.75;
+        if(pos_comp_ptr->position(0) + coll_comp_ptr->radius> 4.0){
+            pos_comp_ptr->position(0) = 4.0 - coll_comp_ptr->radius;
+            world.get_component<Velocity_Component>(it->entity_id)->velocity(0) *= -0.75;
         }
-        if((pos_comp_ptr->position.y - coll_comp_ptr->radius) < 0){
-            pos_comp_ptr->position.y = coll_comp_ptr->radius;
-            world.get_component<Velocity_Component>(it->entity_id)->velocity.y *= -0.75;
+        if((pos_comp_ptr->position(1) - coll_comp_ptr->radius) < 0){
+            pos_comp_ptr->position(1) = coll_comp_ptr->radius;
+            world.get_component<Velocity_Component>(it->entity_id)->velocity(1) *= -0.75;
         }
-        if(pos_comp_ptr->position.y + coll_comp_ptr->radius> 4.0){
-            pos_comp_ptr->position.y = 4.0 - coll_comp_ptr->radius;
-            world.get_component<Velocity_Component>(it->entity_id)->velocity.y *= -0.75;
+        if(pos_comp_ptr->position(1) + coll_comp_ptr->radius> 4.0){
+            pos_comp_ptr->position(1) = 4.0 - coll_comp_ptr->radius;
+            world.get_component<Velocity_Component>(it->entity_id)->velocity(1) *= -0.75;
         }
     }
 }

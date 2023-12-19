@@ -1,7 +1,7 @@
 #include "FlowFieldVisual.hpp"
 #include "ECSManager.hpp"
 
-#include "Vector2D.hpp"
+#include <Eigen/Core>
 
 #include "./components/Position_comp.hpp"
 #include "./components/Render_comp.hpp"
@@ -54,8 +54,8 @@ void FlowField_Visualization_System(ECS_Manager &world){
     float max_len = 0.0;
     for (auto it = world.get_component_begin<Vector_Component>(); 
               it < world.get_component_end<Vector_Component>(); it++){
-        Vector2D vec = world.get_component<Vector_Component>(it->entity_id)->vec; 
-        float vec_mag = std::sqrt(vec.x*vec.x + vec.y*vec.y);
+        Eigen::Vector2f vec = world.get_component<Vector_Component>(it->entity_id)->vec; 
+        float vec_mag = std::sqrt(vec(0)*vec(0) + vec(1)*vec(1));
 
         if (vec_mag > max_len){
             max_len = vec_mag;
@@ -65,15 +65,15 @@ void FlowField_Visualization_System(ECS_Manager &world){
     for (auto it = world.get_component_begin<Vector_Component>(); 
               it < world.get_component_end<Vector_Component>(); it++){
         // Take Physical coords. and convert to a location on the screen
-        Vector2D physical_pos = world.get_component<Position_Component>(it->entity_id)->position;
+        Eigen::Vector2f physical_pos = world.get_component<Position_Component>(it->entity_id)->position;
         
-        Vector2D vec = world.get_component<Vector_Component>(it->entity_id)->vec;
-        float vec_mag = std::sqrt(vec.x*vec.x + vec.y*vec.y);
+        Eigen::Vector2f vec = world.get_component<Vector_Component>(it->entity_id)->vec;
+        float vec_mag = std::sqrt(vec(0)*vec(0) + vec(1)*vec(1));
 
         float scale = vec_mag/max_len;
         
-        world.get_component<Render_Component>(it->entity_id)->x = world2screen_X(physical_pos.x);
-        world.get_component<Render_Component>(it->entity_id)->y = world2screen_Y(physical_pos.y);
+        world.get_component<Render_Component>(it->entity_id)->x = world2screen_X(physical_pos(0));
+        world.get_component<Render_Component>(it->entity_id)->y = world2screen_Y(physical_pos(1));
         world.get_component<Render_Component>(it->entity_id)->width *= scale;
         world.get_component<Render_Component>(it->entity_id)->height *= scale; 
     }

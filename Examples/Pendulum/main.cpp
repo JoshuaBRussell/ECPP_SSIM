@@ -9,8 +9,6 @@
 
 #include <math.h>
 
-#include <Eigen/Core>
-
 #include <raylib-cpp.hpp>
 
 #include <Eigen/Dense>
@@ -53,6 +51,9 @@
 #define TEMP_DT (1/TARGET_FPS)
 
 #define WINDOW_NAME "Flow Field Visualization"
+
+using Eigen::Matrix3f;
+using Eigen::Vector3f; 
 
 
 int main() {
@@ -148,9 +149,23 @@ int main() {
     my_world.add_component<Rotation_Component>(init_rot_val1); 
     my_world.add_component<ODE_Component>(init_ode_val1);
      
+    
+    
+
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
+        Matrix3f A;
+        Vector3f b;
 
+        A << 1,2,3, 4,5,6, 7,8,10;
+        b << 3,3,4;
+
+        std::cout << A << std::endl;
+        std::cout << b << std::endl;
+
+        Vector3f x = A.colPivHouseholderQr().solve(b);
+        std::cout << x << std::endl; 
+        
         for (int i = 0; i < 25; i ++){
             Newtonian_Constraint_System(my_world, TEMP_DT/25);
         }

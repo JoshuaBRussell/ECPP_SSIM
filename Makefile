@@ -15,7 +15,7 @@ target := $(buildDir)/$(executable)
 sources := $(call rwildcard,src/,*.cpp)
 objects := $(patsubst src/%, $(buildDir)/%, $(patsubst %.cpp, %.o, $(sources)))
 depends := $(patsubst %.o, %.d, $(objects))
-compileFlags := -std=c++17 -I include -I ./include/ECS -I ./include/ECS/components -g -Wall
+compileFlags := -std=c++17 -I include -I ./include/ECS -I ./include/ECS/components -I /usr/include/eigen3/ -g -Wall
 linkFlags = -L lib/$(platform) -l raylib
 
 # Check for Windows
@@ -123,3 +123,10 @@ flow_field: $(objects) flow_field_main.o
 
 flow_field_main.o:
 	$(CXX) -c $(compileFlags) Examples/FlowField/main.cpp -o bin/flow_field_main.o
+
+# Link the program and create the executable
+pendulum: $(objects) pendulum_main.o
+	$(CXX) $(objects) bin/pendulum_main.o -o $(target) $(linkFlags)
+
+pendulum_main.o:
+	$(CXX) -c $(compileFlags) Examples/Pendulum/main.cpp -o bin/pendulum_main.o

@@ -1,7 +1,7 @@
 #include "ParticleVisual.hpp"
 #include "ECSManager.hpp"
 
-#include "Vector2D.hpp"
+#include <Eigen/Core>
 
 #include "./components/Particle_comp.hpp"
 #include "./components/Position_comp.hpp"
@@ -52,10 +52,10 @@ void Particle_Visualization_System(ECS_Manager &world){
     for (auto it = world.get_component_begin<Particle_Component>(); 
               it < world.get_component_end<Particle_Component>(); it++){
         // Take Physical coords. and convert to a location on the screen
-        Vector2D physical_pos = world.get_component<Position_Component>(it->entity_id)->position;
+        Eigen::Vector2f physical_pos = world.get_component<Position_Component>(it->entity_id)->position;
         
-        world.get_component<Render_Component>(it->entity_id)->x = world2screen_X(physical_pos.x);
-        world.get_component<Render_Component>(it->entity_id)->y = world2screen_Y(physical_pos.y);
+        world.get_component<Render_Component>(it->entity_id)->x = world2screen_X(physical_pos(0));
+        world.get_component<Render_Component>(it->entity_id)->y = world2screen_Y(physical_pos(1));
     }
 }
 

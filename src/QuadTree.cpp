@@ -6,27 +6,28 @@
 #include <map> 
 
 #include <raylib-cpp.hpp> // Temp for drawing QuadTree
-#include "Render.hpp"
 
+#include <Eigen/Core>
 
 #include "ECSManager.hpp"
-#include "Vector2D.hpp"
+
+#include "Render.hpp"
 
 #include "./components/Position_comp.hpp"
 #include "./components/Collision_comp.hpp"
 
 //#include "FreeList.hpp"
 
-static bool in_quadrant(Vector2D bott_left, Vector2D top_right, Vector2D pos){
+static bool in_quadrant(Eigen::Vector2f bott_left, Eigen::Vector2f top_right, Eigen::Vector2f pos){
         
     // Left/Bottom Boundary Inclusive
-    bool in_x_bounds = (pos.x >= bott_left.x) && (pos.x < top_right.x);
-    bool in_y_bounds = (pos.y >= bott_left.y) && (pos.y < top_right.y);
+    bool in_x_bounds = (pos(0) >= bott_left(0)) && (pos(0) < top_right(0));
+    bool in_y_bounds = (pos(1) >= bott_left(1)) && (pos(1) < top_right(1));
     
     return in_y_bounds && in_x_bounds;
 }
 
-QuadTree::QuadTree(ECS_Manager &world, Vector2D bott_left, Vector2D top_right, int max_depth, int max_node_capacity){
+QuadTree::QuadTree(ECS_Manager &world, Eigen::Vector2f bott_left, Eigen::Vector2f top_right, int max_depth, int max_node_capacity){
     
     this->world = world;
     this->bott_left = bott_left;
@@ -45,8 +46,8 @@ QuadTree::QuadTree(ECS_Manager &world, Vector2D bott_left, Vector2D top_right, i
     this->background_image = raylib::Image(640, 640, raylib::Color(0, 0, 0, 255));
     
 }
-
-raylib::Image *QuadTree::drawQuadTree(QuadNode* quad_node_ptr, Vector2D bott_left, int curr_depth){
+/*
+raylib::Image *QuadTree::drawQuadTree(QuadNode* quad_node_ptr, Eigen::Vector2f bott_left, int curr_depth){
 
     if (quad_node_ptr == nullptr){
         quad_node_ptr = this->root_node_ptr; 
@@ -56,12 +57,12 @@ raylib::Image *QuadTree::drawQuadTree(QuadNode* quad_node_ptr, Vector2D bott_lef
         this->background_image = raylib::Image(640, 640, raylib::Color(0, 0, 0, 255));
     }
 
-    Vector2D root_w_h_vec = this->top_right - this->bott_left; 
+    Eigen::Vector2f root_w_h_vec = this->top_right - this->bott_left; 
 
-    Vector2D w_h_vec = (1/std::pow(2.0, curr_depth)) * root_w_h_vec; 
+    Eigen::Vector2f w_h_vec = (1/std::pow(2.0, curr_depth)) * root_w_h_vec; 
      
     if(quad_node_ptr->first_child_ptr != nullptr){
-        Vector2D curr_bl;  
+        Eigen::Vector2f curr_bl;  
         for (int child_offset = 0; child_offset < 4; child_offset++){
             curr_bl = bott_left;  
             // Find the bott_left for each tree
@@ -69,13 +70,13 @@ raylib::Image *QuadTree::drawQuadTree(QuadNode* quad_node_ptr, Vector2D bott_lef
                 curr_bl = curr_bl + 0.5*w_h_vec; 
             }
             if (child_offset == 1){
-                curr_bl = curr_bl + Vector2D(0.0, w_h_vec.y/2);
+                curr_bl = curr_bl + Eigen::Vector2f(0.0, w_h_vec(1)/2);
             }
             if (child_offset == 2){
                 curr_bl = curr_bl; //i.e. no change
             }
             if (child_offset == 3){
-                curr_bl = curr_bl + Vector2D(w_h_vec.x/2, 0.0);
+                curr_bl = curr_bl + Eigen::Vector2f(w_h_vec(0)/2, 0.0);
             }
             
             // Draw the children        
@@ -88,16 +89,16 @@ raylib::Image *QuadTree::drawQuadTree(QuadNode* quad_node_ptr, Vector2D bott_lef
     // Removing the conditional causes the code to draw the QuadNodes
     // even if they are empty
     //if (quad_node_ptr->first_node_ptr != nullptr){
-        int draw_offset = world2screenscale_Y(w_h_vec.y);
-        raylib::Vector2 pos_vec(world2screen_X(bott_left.x), world2screen_Y(bott_left.y) - draw_offset);
-        raylib::Vector2 size_vec(world2screenscale_X(w_h_vec.x), world2screenscale_Y(w_h_vec.y));
+        int draw_offset = world2screenscale_Y(w_h_vec(1));
+        raylib::Vector2 pos_vec(world2screen_X(bott_left(0)), world2screen_Y(bott_left(1)) - draw_offset);
+        raylib::Vector2 size_vec(world2screenscale_X(w_h_vec(0)), world2screenscale_Y(w_h_vec(1)));
         //raylib::Vector2 size_vec(25, 25);
         //raylib::Vector2 pos_vec(320, 320);
         //raylib::Vector2 size_vec(25, 25); 
         raylib::Rectangle rec(pos_vec, size_vec);
         this->background_image.DrawRectangleLines(rec, 2, raylib::Color(255, 0, 0, 255));
         
-        raylib::Vector2 count_offset_vec(world2screenscale_X(0.5*w_h_vec.x), world2screenscale_Y(0.5*w_h_vec.y));
+        raylib::Vector2 count_offset_vec(world2screenscale_X(0.5*w_h_vec(0)), world2screenscale_Y(0.5*w_h_vec(1)));
         raylib::Vector2 obj_pos = pos_vec + count_offset_vec;
         this->background_image.DrawText(std::to_string(quad_node_ptr->data_node_count),
                                         obj_pos, 16.0, raylib::Color(255, 255, 255, 255));
@@ -107,16 +108,18 @@ raylib::Image *QuadTree::drawQuadTree(QuadNode* quad_node_ptr, Vector2D bott_lef
 
     return &(this->background_image);
 }
+*/
+
 
 struct QuadNodeInfo {
 
     struct QuadNode *quad_node_ptr;
-    Vector2D curr_bl;
-    Vector2D curr_tr;
+    Eigen::Vector2f curr_bl;
+    Eigen::Vector2f curr_tr;
 
 };
 
-void QuadTree::add_element(int ID, Vector2D pos){
+void QuadTree::add_element(int ID, Eigen::Vector2f pos){
     
     // Add check to make sure this is even in the correct location
     assert(in_quadrant(this->bott_left, this->top_right, pos));
@@ -150,14 +153,14 @@ void QuadTree::add_element(int ID, Vector2D pos){
         // If it's not a leaf, find out which of its children need be added to the stack 
         if(curr_node_info.quad_node_ptr->first_child_ptr != nullptr){ 
              
-            Vector2D w_h_vec = curr_node_info.curr_tr - curr_node_info.curr_bl; 
+            Eigen::Vector2f w_h_vec = curr_node_info.curr_tr - curr_node_info.curr_bl; 
             // Find child_bott_left
-            Vector2D child_bott_left; 
-            Vector2D child_bott_left_array[] = {
+            Eigen::Vector2f child_bott_left; 
+            Eigen::Vector2f child_bott_left_array[] = {
                     curr_node_info.curr_bl + 0.5*w_h_vec,
-                    curr_node_info.curr_bl + Vector2D(0.0, w_h_vec.y/2), 
+                    curr_node_info.curr_bl + Eigen::Vector2f(0.0, w_h_vec(1)/2), 
                     curr_node_info.curr_bl,
-                    curr_node_info.curr_bl + Vector2D(w_h_vec.x/2, 0.0) 
+                    curr_node_info.curr_bl + Eigen::Vector2f(w_h_vec(0)/2, 0.0) 
             }; 
             // Go through any of its children. 
             // If any contain a region of the object,
@@ -168,7 +171,7 @@ void QuadTree::add_element(int ID, Vector2D pos){
  
                 child_bott_left = child_bott_left_array[child_offset]; 
                 
-                Vector2D child_top_right = child_bott_left + 0.5*w_h_vec;
+                Eigen::Vector2f child_top_right = child_bott_left + 0.5*w_h_vec;
 
                 // Add to the stack to be processed 
                 if(is_in_region(pos, radius, child_bott_left, child_top_right)){
@@ -359,22 +362,22 @@ std::unordered_set<int>* QuadTree::find_neighbors(int ID){
 //----|----//
 
 // Could be moved to a static function and made to never be seen in the .hpp?
-int QuadTree::find_quad_offset(Vector2D bott_left, Vector2D top_right, Vector2D pos){
+int QuadTree::find_quad_offset(Eigen::Vector2f bott_left, Eigen::Vector2f top_right, Eigen::Vector2f pos){
        
     int return_value = -1;
     
-    Vector2D w_h_vec = top_right - bott_left; // Width in X Coord. Height in Y Coord. 
+    Eigen::Vector2f w_h_vec = top_right - bott_left; // Width in X Coord. Height in Y Coord. 
  
     if (in_quadrant(bott_left + 0.5*w_h_vec, top_right, pos)){
         return 0;
     }
-    if (in_quadrant(bott_left + Vector2D(0.0, w_h_vec.y/2), top_right - Vector2D(w_h_vec.x/2, 0.0), pos)){
+    if (in_quadrant(bott_left + Eigen::Vector2f(0.0, w_h_vec(1)/2), top_right - Eigen::Vector2f(w_h_vec(0)/2, 0.0), pos)){
         return 1;
     } 
     if (in_quadrant(bott_left, top_right - 0.5*w_h_vec, pos)){
         return 2;
     } 
-    if (in_quadrant(bott_left + Vector2D(w_h_vec.x/2, 0.0), top_right - Vector2D(0.0, w_h_vec.y/2), pos)){
+    if (in_quadrant(bott_left + Eigen::Vector2f(w_h_vec(0)/2, 0.0), top_right - Eigen::Vector2f(0.0, w_h_vec(1)/2), pos)){
         return 3;
     } 
 
@@ -404,9 +407,9 @@ void QuadTree::add_element_to_node(struct QuadNode *quad_node_ptr,
 void QuadTree::split_and_distribute(struct QuadNodeInfo curr_node_info){
    
     struct QuadNode *node = curr_node_info.quad_node_ptr;
-    Vector2D node_bl      = curr_node_info.curr_bl;
-    Vector2D node_tr      = curr_node_info.curr_tr;
-    Vector2D w_h_vec      = node_tr - node_bl;
+    Eigen::Vector2f node_bl      = curr_node_info.curr_bl;
+    Eigen::Vector2f node_tr      = curr_node_info.curr_tr;
+    Eigen::Vector2f w_h_vec      = node_tr - node_bl;
 
     struct QuadNode *children = new QuadNode[4](); // The () ensure the children are default-init to 0.
     children[0].first_node_index = -1;
@@ -419,7 +422,7 @@ void QuadTree::split_and_distribute(struct QuadNodeInfo curr_node_info){
     int curr_data_node_index = node->first_node_index;
     while(curr_data_node_index != -1){ 
 
-        Vector2D pos    = this->get_pos_from_ID(this->data_nodes[curr_data_node_index].ID);
+        Eigen::Vector2f pos    = this->get_pos_from_ID(this->data_nodes[curr_data_node_index].ID);
         double radius   = this->get_coll_radius_from_ID(this->data_nodes[curr_data_node_index].ID);
 
         // Remove the data node's association with the - now - parent quad node
@@ -434,14 +437,14 @@ void QuadTree::split_and_distribute(struct QuadNodeInfo curr_node_info){
             }
         } 
 
-        Vector2D w_h_vec = curr_node_info.curr_tr - curr_node_info.curr_bl; 
+        Eigen::Vector2f w_h_vec = curr_node_info.curr_tr - curr_node_info.curr_bl; 
         // Find child_bott_left
-        Vector2D child_bott_left; 
-        Vector2D child_bott_left_array[] = {
+        Eigen::Vector2f child_bott_left; 
+        Eigen::Vector2f child_bott_left_array[] = {
                 curr_node_info.curr_bl + 0.5*w_h_vec,
-                curr_node_info.curr_bl + Vector2D(0.0, w_h_vec.y/2), 
+                curr_node_info.curr_bl + Eigen::Vector2f(0.0, w_h_vec(1)/2), 
                 curr_node_info.curr_bl,
-                curr_node_info.curr_bl + Vector2D(w_h_vec.x/2, 0.0) 
+                curr_node_info.curr_bl + Eigen::Vector2f(w_h_vec(0)/2, 0.0) 
         }; 
         // Since a data node element can inhabit multiple nodes, 
         // we loop through all children seeing if a data node 
@@ -450,7 +453,7 @@ void QuadTree::split_and_distribute(struct QuadNodeInfo curr_node_info){
             
             child_bott_left = child_bott_left_array[child_index]; 
 
-            Vector2D child_top_right = child_bott_left + 0.5*w_h_vec; 
+            Eigen::Vector2f child_top_right = child_bott_left + 0.5*w_h_vec; 
             
             if (this->is_in_region(pos, radius, child_bott_left, child_top_right)){
 
@@ -485,37 +488,37 @@ void QuadTree::split_and_distribute(struct QuadNodeInfo curr_node_info){
     node->first_node_index = -1;
 }
 
-Vector2D QuadTree::find_bott_left(int curr_depth, Vector2D bott_left, int child_offset){
-    Vector2D root_w_h_vec = this->top_right - this->bott_left; 
+Eigen::Vector2f QuadTree::find_bott_left(int curr_depth, Eigen::Vector2f bott_left, int child_offset){
+    Eigen::Vector2f root_w_h_vec = this->top_right - this->bott_left; 
 
-    Vector2D w_h_vec = (1/std::pow(2.0, curr_depth)) * root_w_h_vec;
+    Eigen::Vector2f w_h_vec = (1/std::pow(2.0, curr_depth)) * root_w_h_vec;
 
-    Vector2D curr_bl = bott_left;  
+    Eigen::Vector2f curr_bl = bott_left;  
 
     // Find the bott_left for each tree
     if (child_offset == 0){
         curr_bl = curr_bl + 0.5*w_h_vec; 
     }
     if (child_offset == 1){
-        curr_bl = curr_bl + Vector2D(0.0, w_h_vec.y/2);
+        curr_bl = curr_bl + Eigen::Vector2f(0.0, w_h_vec(1)/2);
     }
     if (child_offset == 2){
         curr_bl = curr_bl; //i.e. no change
     }
     if (child_offset == 3){
-        curr_bl = curr_bl + Vector2D(w_h_vec.x/2, 0.0);
+        curr_bl = curr_bl + Eigen::Vector2f(w_h_vec(0)/2, 0.0);
     } 
 
     return curr_bl;
 }
 
-bool QuadTree::is_in_region(Vector2D pos, double radius, Vector2D bott_left, Vector2D top_right){
+bool QuadTree::is_in_region(Eigen::Vector2f pos, double radius, Eigen::Vector2f bott_left, Eigen::Vector2f top_right){
 
-    return ((pos.x > (bott_left.x - radius)) && (pos.x < (top_right.x + radius))) && \
-           ((pos.y > (bott_left.y - radius)) && (pos.y < (top_right.y + radius)));
+    return ((pos(0) > (bott_left(0) - radius)) && (pos(0) < (top_right(0) + radius))) && \
+           ((pos(1) > (bott_left(1) - radius)) && (pos(1) < (top_right(1) + radius)));
 }
 
-Vector2D QuadTree::get_pos_from_ID(int ID){
+Eigen::Vector2f QuadTree::get_pos_from_ID(int ID){
     
     Position_Component *pos_comp_ptr = this->world.get_component<Position_Component>(ID);
     assert(pos_comp_ptr != nullptr);
