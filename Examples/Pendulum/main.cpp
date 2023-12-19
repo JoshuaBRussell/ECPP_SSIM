@@ -28,7 +28,6 @@
 #include "FlowFieldVisual.hpp"
 #include "ParticleVisual.hpp"
 
-#include "Vector.hpp"
 #include "./ECS/components/Rotation_comp.hpp"
 #include "./ECS/components/PositionZ1_comp.hpp"
 #include "./ECS/components/Position_comp.hpp"
@@ -55,9 +54,6 @@
 
 using Eigen::Matrix3f;
 using Eigen::Vector3f; 
-
-
-
 
 
 int main() {

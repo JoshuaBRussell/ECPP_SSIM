@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Vector.hpp"
-
 enum class INT_METHOD {
     EULER,
     RK4
