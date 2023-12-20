@@ -1,4 +1,4 @@
-#include "Newtonian_Constraint_Sys.hpp"
+#include "Newtonian_Sys.hpp"
 
 #include "ECSManager.hpp"
 
@@ -7,6 +7,7 @@
 
 #include "./components/Position_comp.hpp"
 #include "./components/Velocity_comp.hpp"
+#include "./components/Force_comp.hpp"
 
 #include "./components/ODE_comp.hpp"
 
@@ -26,31 +27,24 @@ void Newtonian_System_init(){
 
 }
 
-void Newtonian_Constraint_System(ECS_Manager &world, float dt){
+void Newtonian_System(ECS_Manager &world, float dt){
 
     for (auto it = world.get_component_begin<ODE_Component>(); 
               it < world.get_component_end<ODE_Component>(); it++){ 
         
         Position_Component* pos_comp_ptr = world.get_component<Position_Component>(it->entity_id);
         Velocity_Component* vel_comp_ptr = world.get_component<Velocity_Component>(it->entity_id); 
-        
-        ODE_Component* ode_comp_ptr = world.get_component<ODE_Component>(it->entity_id);  
-        INT_METHOD method = ode_comp_ptr->integration_method; 
+        Force_Component* force_comp_ptr = world.get_component<Force_Component>(it->entity_id);
 
-        // Find Constraint Force
-        // Assume that gravity is a thing
-        Eigen::Vector2f Force_App = Eigen::Vector2f(0.0, -0.81); // g = 9.81 m/s^2 | m = 1
+        ODE_Component* ode_comp_ptr = world.get_component<ODE_Component>(it->entity_id);  
         
+        
+        INT_METHOD method = ode_comp_ptr->integration_method;
+
         Eigen::Vector2f pos_vec = pos_comp_ptr->position;
         Eigen::Vector2f vel_vec = vel_comp_ptr->velocity;
 
-        double lambda_not = (-(vel_vec(0)*vel_vec(0) + vel_vec(1)*vel_vec(1)) - (pos_vec(0)*Force_App(0) + pos_vec(1)*Force_App(1)));
-        double lambda = lambda_not/(pos_vec(0)*pos_vec(0) +pos_vec(1)*pos_vec(1));
-
-        Eigen::Vector2f Force_Constraint = lambda * pos_vec;
-
-        Eigen::Vector2f Force_Net = Force_App + Force_Constraint;
-        Eigen::Vector2f acc_net = Force_Net; // m = 1 
+        Eigen::Vector2f acc_net = force_comp_ptr->force;// m = 1 
 
         switch (method) {
             case INT_METHOD::EULER:{ 
