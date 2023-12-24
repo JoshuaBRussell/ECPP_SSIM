@@ -119,12 +119,12 @@ int main() {
     
     int euler_id = entity_id;
     Particle_Component init_particle_flag = {euler_id};
-    Position_Component init_particle_pos  = {euler_id, Eigen::Vector2f(-1.0, 0.0)};
-    Velocity_Component init_particle_vel = {euler_id, Eigen::Vector2f(0.0, 0.2)}; 
+    Position_Component init_particle_pos  = {euler_id, Eigen::Vector2f(-2.0, 0.0)};
+    Velocity_Component init_particle_vel = {euler_id, Eigen::Vector2f(0.0, 0.0)}; 
     Rotation_Component init_rot_val       = {euler_id, 0.0}; 
     Render_Component init_render_val      = {euler_id, "./misc/RedCirc.png",
                                             320, 320, 20, 20}; // x, y, h, w; 
-    ODE_Component init_ode_val            = {euler_id, INT_METHOD::EULER};
+    ODE_Component init_ode_val            = {euler_id, INT_METHOD::RK4};
     Force_Component init_force_val        = {euler_id, Eigen::Vector2f(0.0, 0.0)};
     Constraint_Component init_constr_val  = {euler_id, CONSTR_TYPE::ROTATION};
 
@@ -142,7 +142,7 @@ int main() {
     int rk_id = entity_id;
     Particle_Component init_particle_flag1 = {rk_id};
     Position_Component init_particle_pos1 = {rk_id, Eigen::Vector2f(-1.0, 0.0)};
-    Velocity_Component init_particle_vel1 = {rk_id, Eigen::Vector2f(0.0, 0.2)}; 
+    Velocity_Component init_particle_vel1 = {rk_id, Eigen::Vector2f(0.0, 0.0)}; 
     Rotation_Component init_rot_val1      = {rk_id, 0.0}; 
     Render_Component init_render_val1     = {rk_id, "./misc/BlueCirc.png",
                                             320, 320, 20, 20}; // x, y, h, w; 
@@ -158,14 +158,17 @@ int main() {
     my_world.add_component<ODE_Component>(init_ode_val1);
     my_world.add_component<Force_Component>(init_force_val1); 
     my_world.add_component<Constraint_Component>(init_constr_val1); 
-    
+   
+    //Constraint_System(my_world);
 
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
         
-        for (int i = 0; i < 25; i ++){
+        for (int i = 0; i < 100; i ++){
+            //Position_Component* pos_comp_ptr = my_world.get_component<Position_Component>(rk_id);
+            //pos_comp_ptr->position = Eigen::Vector2f(-0.7071, -0.7071);
             Constraint_System(my_world); 
-            Newtonian_System(my_world, TEMP_DT/25);
+            Newtonian_System(my_world, TEMP_DT/100);
         }
 
         Particle_Visualization_System(my_world);
