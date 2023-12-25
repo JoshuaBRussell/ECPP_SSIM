@@ -6,7 +6,7 @@
 
 void Newtonian_System_init();
 
-void Newtonian_Constraint_System(ECS_Manager &world, float dt);
+void Newtonian_System(ECS_Manager &world, float dt);
 
 // Newtonian ODE Function
 // state: {pos_x, vel_x, pos_y, vel_y}

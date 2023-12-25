@@ -130,3 +130,10 @@ pendulum: $(objects) pendulum_main.o
 
 pendulum_main.o:
 	$(CXX) -c $(compileFlags) Examples/Pendulum/main.cpp -o bin/pendulum_main.o
+
+# Link the program and create the executable
+double_pend: $(objects) double_pend_main.o
+	$(CXX) $(objects) bin/double_pend_main.o -o $(target) $(linkFlags)
+
+double_pend_main.o:
+	$(CXX) -c $(compileFlags) Examples/DoublePendulum/main.cpp -o bin/double_pend_main.o
