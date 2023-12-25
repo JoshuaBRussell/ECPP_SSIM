@@ -98,36 +98,7 @@ void Constraint_System(ECS_Manager &world){
 
     Eigen::Vector4f Q_hat = J.transpose()*x;
 
-    
     force_comp_ptr->force  = Force_App + Eigen::Vector2f(Q_hat(0), Q_hat(1));
     force_comp_ptr2->force = Force_App + Eigen::Vector2f(Q_hat(2), Q_hat(3));
     
-    std::cout << "A: " << std::endl;
-    std::cout << A << std::endl;
-
-    std::cout << "x: " << std::endl;
-    std::cout << x << std::endl;
-    
-    std::cout << "A*x | b: " << std::endl;
-    std::cout << A*x << " | " << b << std::endl; 
-   
-    std::cout << "Error: " << A*x - b << std::endl;
-
-    std::cout << "J: " << std::endl;
-    std::cout << J << std::endl;
-
-    std::cout << "M_inv: " << std::endl;
-    std::cout << M.inverse() << std::endl;
-
-    std::cout << "J_dot: " << std::endl;
-    std::cout << J_dot << std::endl;
-
-    std::cout << "q_dot: " << std::endl;
-    std::cout << q_dot << std::endl;
-
-    std::cout << "Q: " << std::endl;
-    std::cout << Q << std::endl;
-
-    std::cout << "Q_hat: " << std::endl;
-    std::cout << Q_hat << std::endl;
 }
