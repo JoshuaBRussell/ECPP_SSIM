@@ -86,8 +86,9 @@ int main() {
     my_world.register_component<Particle_Component>(); 
     my_world.register_component<ODE_Component>();
     my_world.register_component<Force_Component>();
-    my_world.register_component<Constraint_Component>(); 
-    
+    my_world.register_component<Fixed_Rot_Component>(); 
+    my_world.register_component<Relative_Rot_Component>(); 
+
     int entity_id = 1;
     // Display the Acceleration Field
     Eigen::Vector2f global_acc = Eigen::Vector2f(0.0, -0.81);  
@@ -126,8 +127,6 @@ int main() {
                                             320, 320, 20, 20}; // x, y, h, w; 
     ODE_Component init_ode_val            = {euler_id, INT_METHOD::RK4};
     Force_Component init_force_val        = {euler_id, Eigen::Vector2f(0.0, 0.0)};
-    Constraint_Component init_constr_val  = {euler_id, CONSTR_TYPE::ROTATION};
-
 
     my_world.add_component<Particle_Component>(init_particle_flag);
     my_world.add_component<Position_Component>(init_particle_pos);
@@ -136,7 +135,6 @@ int main() {
     my_world.add_component<Rotation_Component>(init_rot_val);  
     my_world.add_component<ODE_Component>(init_ode_val); 
     my_world.add_component<Force_Component>(init_force_val); 
-    my_world.add_component<Constraint_Component>(init_constr_val);
     
     entity_id++;
     int rk_id = entity_id;
@@ -148,7 +146,6 @@ int main() {
                                             320, 320, 20, 20}; // x, y, h, w; 
     ODE_Component init_ode_val1           = {rk_id, INT_METHOD::RK4}; 
     Force_Component init_force_val1        = {rk_id, Eigen::Vector2f(0.0, 0.0)};
-    Constraint_Component init_constr_val1  = {rk_id, CONSTR_TYPE::ROTATION}; 
     
     my_world.add_component<Particle_Component>(init_particle_flag1);
     my_world.add_component<Position_Component>(init_particle_pos1);
@@ -156,9 +153,17 @@ int main() {
     my_world.add_component<Render_Component>(init_render_val1);
     my_world.add_component<Rotation_Component>(init_rot_val1); 
     my_world.add_component<ODE_Component>(init_ode_val1);
-    my_world.add_component<Force_Component>(init_force_val1); 
-    my_world.add_component<Constraint_Component>(init_constr_val1); 
-   
+    my_world.add_component<Force_Component>(init_force_val1);
+
+    // Add Constraints
+    entity_id++;
+    Fixed_Rot_Component particle1_constr = {entity_id, rk_id, Eigen::Vector2f(0.0, 0.0), 1.0};
+     
+    entity_id++;
+    Relative_Rot_Component particle2_constr = {entity_id, rk_id, euler_id, 1.0};
+    
+    my_world.add_component<Fixed_Rot_Component>(particle1_constr);
+    my_world.add_component<Relative_Rot_Component>(particle2_constr);
     //Constraint_System(my_world);
 
     while (!w.ShouldClose()) // Detect window close button or ESC key

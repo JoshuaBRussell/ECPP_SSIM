@@ -1,12 +1,25 @@
 #pragma once
 
-enum class CONSTR_TYPE {
-    ROTATION 
+#include <Eigen/Core>
+
+struct Fixed_Rot_Component {
+    
+    int entity_id; 
+
+    int constr_entity; 
+    Eigen::Vector2f fixed_point;
+    float radius;
 };
 
-struct Constraint_Component {
+struct Relative_Rot_Component {
     
     int entity_id;
 
-    CONSTR_TYPE constr_type;
+    // The two entities to constrain
+    int constr_entity1;
+    int constr_entity2;
+
+    float radius;
+
 };
+
