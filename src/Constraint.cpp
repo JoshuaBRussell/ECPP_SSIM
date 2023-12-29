@@ -14,7 +14,8 @@
 #include "./components/Acceleration_comp.hpp"
 #include "./components/Force_comp.hpp"
 
-size_t ENTITY_DIM = 2;
+const size_t ENTITY_DIM = 2;
+const float Kp_C = 2.5; 
 
 struct constr_info {
     int i; // constraint index;
@@ -60,8 +61,7 @@ void Constraint_System(ECS_Manager &world){
     // This just used the index
     std::vector<int> constr_entities;
     std::vector<constr_info> constrs_vec;
-     
-    int constr_count = 0;
+    std::vector<float> constrs_eval; 
     
     // Collect info needed for each constraint
     for (auto it = world.get_component_begin<Fixed_Rot_Component>(); 
@@ -76,7 +76,7 @@ void Constraint_System(ECS_Manager &world){
         Velocity_Component* vel_comp_ptr = world.get_component<Velocity_Component>(it->constr_entity); 
         
         struct constr_info constr_info;
-        constr_info.i              = constr_count;
+        constr_info.i              = constrs_eval.size();
         constr_info.j              = entity_offset;
         constr_info.J_sub_block[0] = 2.0*pos_comp_ptr->position.x();
         constr_info.J_sub_block[1] = 2.0*pos_comp_ptr->position.y(); 
@@ -85,7 +85,9 @@ void Constraint_System(ECS_Manager &world){
         
         constrs_vec.push_back(constr_info);
    
-        constr_count++;
+        //x^2 + y^2 - r^2
+        float constr_val = pos_comp_ptr->position.squaredNorm() - it->radius*it->radius; 
+        constrs_eval.push_back(constr_val);
     }
 
     // Collect info needed for each constraint
@@ -106,7 +108,7 @@ void Constraint_System(ECS_Manager &world){
         
         // For the first entity
         struct constr_info constr_info1;
-        constr_info1.i              = constr_count;
+        constr_info1.i              = constrs_eval.size();
         constr_info1.j              = constr_entity_offset1;
         constr_info1.J_sub_block[0] = -2.0*(pos_comp_ptr2->position.x() - pos_comp_ptr1->position.x());
         constr_info1.J_sub_block[1] = -2.0*(pos_comp_ptr2->position.y() - pos_comp_ptr1->position.y()); 
@@ -116,7 +118,7 @@ void Constraint_System(ECS_Manager &world){
         constrs_vec.push_back(constr_info1); 
         
         struct constr_info constr_info2;
-        constr_info2.i              = constr_count;
+        constr_info2.i              = constrs_eval.size();
         constr_info2.j              = constr_entity_offset2;
         constr_info2.J_sub_block[0] = 2.0*(pos_comp_ptr2->position.x() - pos_comp_ptr1->position.x());
         constr_info2.J_sub_block[1] = 2.0*(pos_comp_ptr2->position.y() - pos_comp_ptr1->position.y()); 
@@ -124,26 +126,22 @@ void Constraint_System(ECS_Manager &world){
         constr_info2.J_dot_sub_block[1] = -2.0*(vel_comp_ptr1->velocity.y() - vel_comp_ptr2->velocity.y());
         
         constrs_vec.push_back(constr_info2);
-        constr_count++;
-        
+
+        //(x2 - x1)^2 + (y2 - y1)^2 - r^2
+        float constr_val = (pos_comp_ptr2->position - pos_comp_ptr1->position).squaredNorm() - it->radius*it->radius; 
+        constrs_eval.push_back(constr_val);
     }
     
     // ---- Form Global Matrices/Vectors ---- //
    
-    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> J(constr_count, ENTITY_DIM*constr_entities.size()); 
-    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> J_dot(constr_count, ENTITY_DIM*constr_entities.size()); 
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> J(constrs_eval.size(), ENTITY_DIM*constr_entities.size()); 
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> J_dot(constrs_eval.size(), ENTITY_DIM*constr_entities.size()); 
     
-    J = Eigen::MatrixXf::Zero(constr_count, ENTITY_DIM*constr_entities.size());
-    J_dot = Eigen::MatrixXf::Zero(constr_count, ENTITY_DIM*constr_entities.size());
+    J = Eigen::MatrixXf::Zero(constrs_eval.size(), ENTITY_DIM*constr_entities.size());
+    J_dot = Eigen::MatrixXf::Zero(constrs_eval.size(), ENTITY_DIM*constr_entities.size());
 
-    std::cout << "Constraint Count: " << constr_count << std::endl;
-    std::cout << "Constrained Entities " << constr_entities.size() << std::endl;
     
     for (auto it = constrs_vec.begin(); it < constrs_vec.end();  it++){
-        std::cout << it->i << std::endl;
-        std::cout << it->j << std::endl;
-        std::cout << it->J_sub_block[0] << " | " << it->J_sub_block[1] << std::endl;
-        std::cout << it->J_dot_sub_block[0] << " | " << it->J_dot_sub_block[1] << std::endl;
 
         J(it->i, it->j)   = it->J_sub_block[0]; 
         J(it->i, it->j+1) = it->J_sub_block[1];
@@ -158,6 +156,7 @@ void Constraint_System(ECS_Manager &world){
     
     Eigen::VectorXf q_dot(ENTITY_DIM*constr_entities.size());
     Eigen::VectorXf Q(ENTITY_DIM*constr_entities.size());
+    Eigen::VectorXf C(constrs_eval.size()); 
     
     for (auto it = constr_entities.begin(); it < constr_entities.end(); it++){
         int entity_offset = 2*std::distance(constr_entities.begin(), it);
@@ -170,21 +169,23 @@ void Constraint_System(ECS_Manager &world){
 
         Q(entity_offset    ) = force_comp_ptr->force.x(); 
         Q(entity_offset + 1) = force_comp_ptr->force.y();
-        std::cout << "Fy" << std::endl;
-        std::cout << Q(entity_offset + 1) << std::endl;
 
     }
-    std::cout << "J: " << std::endl;
-    std::cout << J << std::endl;
+
+    // Copy the collected evaluated constraint functions into
+    // this vector to be used when solving for the constraint
+    // forces  
+    for (size_t i = 0; i < constrs_eval.size(); i++){
+       C(i) = constrs_eval[i]; 
+    }
 
     // Solve Global Matrices
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> A = J*M.inverse()*J.transpose();
-    Eigen::VectorXf b = -1.0*J_dot*q_dot - J*M.inverse()*Q;//- 2.5*C;
+    Eigen::VectorXf b = -1.0*J_dot*q_dot - J*M.inverse()*Q - Kp_C*C;
     
     Eigen::VectorXf x = A.fullPivHouseholderQr().solve(b);
     
     //\hat{Q}  = J^T\lambda
-
     Eigen::VectorXf Q_hat = J.transpose()*x;    
 
     // Apply Constraint Forces
@@ -194,83 +195,6 @@ void Constraint_System(ECS_Manager &world){
         Force_Component* force_comp_ptr = world.get_component<Force_Component>(*it); 
         force_comp_ptr->force.x() = force_comp_ptr->force.x() + Q_hat(entity_offset    ); 
         force_comp_ptr->force.y() = force_comp_ptr->force.y() + Q_hat(entity_offset + 1);
-        std::cout << "Actual Fy" << std::endl;
-        std::cout << force_comp_ptr->force.y() << std::endl; 
     }
 
-
-/*
-    // Had to switch order due to order obtained not be what was initially expected 
-    auto it2 = world.get_component_begin<Constraint_Component>(); 
-    auto it1 = it2+1; 
-    
-    Position_Component* pos_comp_ptr = world.get_component<Position_Component>(it1->entity_id);
-    Velocity_Component* vel_comp_ptr = world.get_component<Velocity_Component>(it1->entity_id); 
-    Force_Component* force_comp_ptr = world.get_component<Force_Component>(it1->entity_id);
-    
-    
-    Position_Component* pos_comp_ptr2 = world.get_component<Position_Component>(it2->entity_id);
-    Velocity_Component* vel_comp_ptr2 = world.get_component<Velocity_Component>(it2->entity_id); 
-    Force_Component* force_comp_ptr2 = world.get_component<Force_Component>(it2->entity_id);
-
-
-    // Find Constraint Force
-    // Assume that gravity is a thing
-    Eigen::Vector2f Force_App = Eigen::Vector2f(0.0, -0.81); // g = 9.81 m/s^2 | m = 1
-    // JWJ^T\lambda = -\dot{J}\dot{q} - JWQ
-    Eigen::Vector2f Force_Constraint = Eigen::Vector2f(0.0, 0.0);
-    
-    Eigen::Matrix<float, 2, 1> C = Eigen::MatrixXf::Zero(2, 1);
-
-    C(0) = pos_comp_ptr->position.squaredNorm() - 1.0;
-    C(1) = (pos_comp_ptr2->position - pos_comp_ptr->position).squaredNorm() - 1.0;
-
-    Eigen::Matrix<float, 2, 4> J = Eigen::MatrixXf::Zero(2, 4);
-    
-    J(0, 0) = 2.0*pos_comp_ptr->position.x(); 
-    J(0, 1) = 2.0*pos_comp_ptr->position.y(); 
-
-    J(1, 0) = -2.0*(pos_comp_ptr2->position.x() - pos_comp_ptr->position.x());
-    J(1, 1) = -2.0*(pos_comp_ptr2->position.y() - pos_comp_ptr->position.y()); 
-    J(1, 2) =  2.0*(pos_comp_ptr2->position.x() - pos_comp_ptr->position.x()); 
-    J(1, 3) =  2.0*(pos_comp_ptr2->position.y() - pos_comp_ptr->position.y()); 
-    
-    Eigen::Matrix<float, 4, 4> M = Eigen::Matrix<float, 4, 4>::Identity();
-    
-    Eigen::Matrix<float, 2, 4> J_dot= Eigen::MatrixXf::Zero(2, 4);
-    
-    J_dot(0, 0) = 2.0*vel_comp_ptr->velocity.x(); 
-    J_dot(0, 1) = 2.0*vel_comp_ptr->velocity.y(); 
-    
-    J_dot(1, 0) = 2.0*(vel_comp_ptr->velocity.x() - vel_comp_ptr2->velocity.x());
-    J_dot(1, 1) = 2.0*(vel_comp_ptr->velocity.y() - vel_comp_ptr2->velocity.y());
-    J_dot(1, 2) = 2.0*(vel_comp_ptr2->velocity.x() - vel_comp_ptr->velocity.x());
-    J_dot(1, 3) = 2.0*(vel_comp_ptr2->velocity.y() - vel_comp_ptr->velocity.y());
-    
-    Eigen::Vector4f q_dot;
-    
-    q_dot(0) = vel_comp_ptr->velocity.x();
-    q_dot(1) = vel_comp_ptr->velocity.y();
-    q_dot(2) = vel_comp_ptr2->velocity.x();
-    q_dot(3) = vel_comp_ptr2->velocity.y();
-    
-
-    Eigen::Vector4f Q;
-    Q(0) = Force_App.x(); 
-    Q(1) = Force_App.y();
-    Q(2) = Force_App.x();
-    Q(3) = Force_App.y();
-    
-    Eigen::Matrix<float, 2, 2> A = J*M.inverse()*J.transpose();
-    Eigen::Vector2f b = -1.0*J_dot*q_dot - J*M.inverse()*Q;//- 2.5*C;
-    
-    Eigen::Vector2f x = A.fullPivHouseholderQr().solve(b);
-    
-    //\hat{Q}  = J^T\lambda
-
-    Eigen::Vector4f Q_hat = J.transpose()*x;
-
-    force_comp_ptr->force  = Force_App + Eigen::Vector2f(Q_hat(0), Q_hat(1));
-    force_comp_ptr2->force = Force_App + Eigen::Vector2f(Q_hat(2), Q_hat(3));
-*/   
 }
