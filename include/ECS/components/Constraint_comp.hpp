@@ -23,3 +23,14 @@ struct Relative_Rot_Component {
 
 };
 
+struct Linear_Component {
+    
+    int entity_id;
+
+    int constr_entity;
+    
+    // Defines the line to be constrained to
+    float m;
+    float b;
+
+};

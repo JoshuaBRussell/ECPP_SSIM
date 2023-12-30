@@ -91,6 +91,39 @@ void Constraint_System(ECS_Manager &world){
     }
 
     // Collect info needed for each constraint
+    for (auto it = world.get_component_begin<Linear_Component>(); 
+              it < world.get_component_end<Linear_Component>(); it++){  
+          
+        int constr_entity = it->constr_entity;
+        // Add Unique Item to List
+        int entity_offset = 2*add_id_if_unique(&constr_entities, constr_entity); 
+        
+        Position_Component* pos_comp_ptr = world.get_component<Position_Component>(it->constr_entity);
+        
+        // Copying into stack variables to make code easier to read
+        float m = it->m;
+        float b = it->b;
+        float p_x = pos_comp_ptr->position.x();
+        float p_y = pos_comp_ptr->position.y();
+
+        struct constr_info constr_info;
+        constr_info.i              = constrs_eval.size();
+        constr_info.j              = entity_offset;
+        constr_info.J_sub_block[0] = -2.0*m*(p_y - (m*p_x + b));
+        constr_info.J_sub_block[1] =  2.0*  (p_y - (m*p_x+b));
+        constr_info.J_dot_sub_block[0] = 2.0*(-2*m*p_y + 2*m*m*p_x + m*b); 
+        constr_info.J_dot_sub_block[1] = 2.0*(-2*m*p_x + 2*p_y - b);
+        
+        constrs_vec.push_back(constr_info);
+        //y_d  = (m*x +b)  
+        //C(i) = |p - p_desired|
+        //     = (x - x_d)^2 + (y - y_d)^2
+        //     = (y - (m*x + b))^2 
+        float constr_val = (p_y - (m*p_x + b)) * (p_y - (m*p_x + b)); 
+        constrs_eval.push_back(constr_val);
+    }
+
+    // Collect info needed for each constraint
     for (auto it = world.get_component_begin<Relative_Rot_Component>(); 
               it < world.get_component_end<Relative_Rot_Component>(); it++){ 
         

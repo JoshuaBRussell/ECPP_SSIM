@@ -137,3 +137,10 @@ double_pend: $(objects) double_pend_main.o
 
 double_pend_main.o:
 	$(CXX) -c $(compileFlags) Examples/DoublePendulum/main.cpp -o bin/double_pend_main.o
+
+# Link the program and create the executable
+lin_constr: $(objects) lin_constr_main.o
+	$(CXX) $(objects) bin/lin_constr_main.o -o $(target) $(linkFlags)
+
+lin_constr_main.o:
+	$(CXX) -c $(compileFlags) Examples/LinearConstraint/main.cpp -o bin/lin_constr_main.o
