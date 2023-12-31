@@ -28,7 +28,9 @@
 #include "FlowFieldVisual.hpp"
 #include "ParticleVisual.hpp"
 #include "Constraint.hpp"
+#include "Connector_Sys.hpp"
 
+#include "./ECS/components/Connector_comp.hpp" 
 #include "./ECS/components/Rotation_comp.hpp"
 #include "./ECS/components/Angular_Vel_comp.hpp"
 #include "./ECS/components/Rot_Inertia_comp.hpp"
@@ -57,7 +59,7 @@
 
 #define TEMP_DT (1/TARGET_FPS)
 
-#define WINDOW_NAME "Pendulum Visualization"
+#define WINDOW_NAME "Rotation Visualization"
 
 
 int main() {
@@ -80,7 +82,8 @@ int main() {
     
     Render_init(render_config);
     Constraint_System_Init(my_world);
-
+    
+    my_world.register_component<Connector_Component>(); 
     my_world.register_component<Render_Component>();
     my_world.register_component<Position_Component>();
     my_world.register_component<Velocity_Component>(); 
@@ -110,7 +113,7 @@ int main() {
                                             320, 320, 100, 100}; // x, y, h, w; 
     ODE_Component init_ode_val             = {entity_id, INT_METHOD::EULER};
     Force_Component init_force_val         = {entity_id, Eigen::Vector2f(0.0, 0.0)};
-    Torque_Component init_torque_val        = {entity_id, 11.0}; 
+    Torque_Component init_torque_val        = {entity_id, 0.0}; 
     Inertia_Component init_inertia_val     = {entity_id, 1.0};
     Rot_Inertia_Component init_rot_inertia_val = {entity_id, 1.0}; 
     
@@ -125,12 +128,24 @@ int main() {
     my_world.add_component<Angular_Vel_Component>(init_rot_vel_val);
     
     my_world.add_component<Inertia_Component>(init_inertia_val); 
-    my_world.add_component<Rot_Inertia_Component>(init_rot_inertia_val); 
+    my_world.add_component<Rot_Inertia_Component>(init_rot_inertia_val);
+
+
+    int obj_id = entity_id;
+    entity_id++;
+    Connector_Component connector_val = {entity_id, 
+                                         Eigen::Vector2f(0.5, 0.5),
+                                         Eigen::Vector2f(0.01, 0.0), 
+                                         Eigen::Vector2f(0.0, 0.0),
+                                         obj_id};
+
+    my_world.add_component<Connector_Component>(connector_val);
 
     while (!w.ShouldClose()) // Detect window close button or ESC key
     {
         
         for (int i = 0; i < 25; i ++){
+            Connector_System(my_world);
             Constraint_System(my_world); 
             Newtonian_System(my_world, TEMP_DT/25);
         }
