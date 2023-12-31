@@ -73,7 +73,7 @@ void Constraint_System(ECS_Manager &world){
               it < world.get_component_end<Force_Component>(); it++){
          
         Force_Component* force_comp_ptr = world.get_component<Force_Component>(it->entity_id); 
-        force_comp_ptr->force = Eigen::Vector2f(0.0, -0.81); // g = 9.81 m/s^2 | m = 1 
+        force_comp_ptr->force = Eigen::Vector2f(0.0, 0.0); // g = 9.81 m/s^2 | m = 1 
     
     }
    
