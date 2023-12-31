@@ -75,6 +75,7 @@ int main() {
     };
     
     Render_init(render_config);
+    Constraint_System_Init(my_world); 
     
     my_world.register_component<Render_Component>();
     my_world.register_component<Position_Component>();

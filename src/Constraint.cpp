@@ -1,4 +1,4 @@
-#include "Motion.hpp"
+#include "Constraint.hpp"
 
 #include <algorithm>
 
@@ -44,8 +44,30 @@ int add_id_if_unique(std::vector<int>* vec_ptr, int id){
     return return_index;
 }
 
+bool has_been_init = false;
+
+void Constraint_System_Init(ECS_Manager &world){
+    
+    // Hack to make sure that all components this system "needs"
+    // doesn't crash in the instance that the user doesn't register the components
+    world.register_component<Fixed_Rot_Component>();
+    world.register_component<Linear_Component>();
+    world.register_component<Relative_Rot_Component>(); 
+    
+    has_been_init = true;
+
+}
+
 void Constraint_System(ECS_Manager &world){
     
+
+    // Check if init was called
+    if (!has_been_init){
+        std::cout << "WARNING: Constraint System has not been initialized. Call 'Constraint_init(<arg>)'" << std::endl;
+    }
+
+
+
     // Assume that gravity is a thing  
     for (auto it = world.get_component_begin<Force_Component>(); 
               it < world.get_component_end<Force_Component>(); it++){
