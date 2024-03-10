@@ -29,12 +29,14 @@
 #include "ParticleVisual.hpp"
 #include "Constraint.hpp"
 #include "Connector_Sys.hpp"
+#include "Gravity_Sys.hpp"
+
 
 #include "./ECS/components/Connector_comp.hpp" 
 #include "./ECS/components/Rotation_comp.hpp"
 #include "./ECS/components/Angular_Vel_comp.hpp"
 #include "./ECS/components/Rot_Inertia_comp.hpp"
-#include "./ECS/components/Inertia_comp.hpp"
+#include "./ECS/components/Mass_comp.hpp"
 #include "./ECS/components/PositionZ1_comp.hpp"
 #include "./ECS/components/Position_comp.hpp"
 #include "./ECS/components/Velocity_comp.hpp"
@@ -50,6 +52,7 @@
 #include "./ECS/components/Particle_comp.hpp"
 #include "./ECS/components/ODE_comp.hpp"
 #include "./ECS/components/Constraint_comp.hpp"
+#include "./ECS/components/Gravity_comp.hpp"
 
 #define WORLD_RADIUS (SCREEN_WIDTH_METERS/2)
 
@@ -91,11 +94,12 @@ int main() {
     my_world.register_component<Collision_Component>();
     my_world.register_component<Rotation_Component>();
     my_world.register_component<Angular_Vel_Component>();
-    my_world.register_component<Inertia_Component>(); 
+    my_world.register_component<Mass_Component>(); 
     my_world.register_component<Rot_Inertia_Component>();
     my_world.register_component<Vector_Component>(); 
     my_world.register_component<Particle_Component>(); 
     my_world.register_component<ODE_Component>();
+    my_world.register_component<Gravity_Component>(); 
     my_world.register_component<Force_Component>();
     my_world.register_component<Torque_Component>(); 
     my_world.register_component<Fixed_Rot_Component>(); 
@@ -105,6 +109,7 @@ int main() {
     int entity_id = 1;
     
     Particle_Component init_particle_flag  = {entity_id};
+    Gravity_Component init_gravity_flag    = {entity_id}; 
     Position_Component init_particle_pos   = {entity_id, Eigen::Vector2f(0.0, 0.0)};
     Velocity_Component init_particle_vel   = {entity_id, Eigen::Vector2f(0.0, 0.0)}; 
     Rotation_Component init_rot_val        = {entity_id, 0.0}; 
@@ -114,8 +119,8 @@ int main() {
     ODE_Component init_ode_val             = {entity_id, INT_METHOD::EULER};
     Force_Component init_force_val         = {entity_id, Eigen::Vector2f(0.0, 0.0)};
     Torque_Component init_torque_val        = {entity_id, 0.0}; 
-    Inertia_Component init_inertia_val     = {entity_id, 1.0};
-    Rot_Inertia_Component init_rot_inertia_val = {entity_id, 1.0}; 
+    Mass_Component init_mass_val        = {entity_id, 1.0}; 
+    Rot_Inertia_Component init_rot_inertia_val = {entity_id, 0.1}; 
     
     my_world.add_component<Particle_Component>(init_particle_flag);
     my_world.add_component<Position_Component>(init_particle_pos);
@@ -127,10 +132,10 @@ int main() {
     my_world.add_component<Torque_Component>(init_torque_val); 
     my_world.add_component<Angular_Vel_Component>(init_rot_vel_val);
     
-    my_world.add_component<Inertia_Component>(init_inertia_val); 
+    my_world.add_component<Mass_Component>(init_mass_val); 
     my_world.add_component<Rot_Inertia_Component>(init_rot_inertia_val);
-
-
+    my_world.add_component<Gravity_Component>(init_gravity_flag); 
+     
     int obj_id = entity_id;
     entity_id++;
     Connector_Component connector_val = {entity_id, 
@@ -146,7 +151,8 @@ int main() {
         
         for (int i = 0; i < 25; i ++){
             Connector_System(my_world);
-            Constraint_System(my_world); 
+            Gravity_System(my_world);
+            //Constraint_System(my_world); 
             Newtonian_System(my_world, TEMP_DT/25);
         }
 
