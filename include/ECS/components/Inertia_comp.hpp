@@ -4,6 +4,6 @@ struct Inertia_Component {
     
     int entity_id;
 
-    float m;
+    float I;
 
 };

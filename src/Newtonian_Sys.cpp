@@ -11,7 +11,7 @@
 #include "./components/Angular_Vel_comp.hpp"
 #include "./components/Force_comp.hpp"
 #include "./components/Torque_comp.hpp"
-#include "./components/Inertia_comp.hpp"
+#include "./components/Mass_comp.hpp"
 #include "./components/Rot_Inertia_comp.hpp"
 #include "./components/ODE_comp.hpp"
 
@@ -44,7 +44,7 @@ void Newtonian_System(ECS_Manager &world, float dt){
         Force_Component* force_comp_ptr = world.get_component<Force_Component>(it->entity_id);
         Torque_Component* torque_comp_ptr = world.get_component<Torque_Component>(it->entity_id);
         
-        Inertia_Component* inertial_comp_ptr = world.get_component<Inertia_Component>(it->entity_id);        
+        Mass_Component* mass_comp_ptr = world.get_component<Mass_Component>(it->entity_id);        
         Rot_Inertia_Component* rot_inertia_comp_ptr = world.get_component<Rot_Inertia_Component>(it->entity_id);
         
         Position_Component* pos_comp_ptr = world.get_component<Position_Component>(it->entity_id);
@@ -62,7 +62,7 @@ void Newtonian_System(ECS_Manager &world, float dt){
         float theta = rot_comp_ptr->angle;
         float w = ang_vel_comp_ptr->w;
         
-        Eigen::Vector2f lin_acc_net = force_comp_ptr->force / inertial_comp_ptr->m;
+        Eigen::Vector2f lin_acc_net = force_comp_ptr->force / mass_comp_ptr->m;
         float ang_acc_net = torque_comp_ptr->torque / rot_inertia_comp_ptr->moment_of_inertia;
 
         switch (method) {
@@ -147,6 +147,9 @@ void Newtonian_System(ECS_Manager &world, float dt){
                 ang_vel_comp_ptr->w    = state_vec[5];
                 break;
                 }
-        } 
+        }
+
+        force_comp_ptr->force = Eigen::Vector2f(0.0, 0.0);
+        torque_comp_ptr->torque = 0.0; 
     }
 }

@@ -11,7 +11,7 @@ struct Connector_Component {
    
     // Force/Torque applied at connector location
     Eigen::Vector2f force;
-    Eigen::Vector2f torque;
+    float torque;
 
     int attached_entity;
 
