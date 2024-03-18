@@ -112,7 +112,7 @@ int main() {
     Gravity_Component init_gravity_flag    = {entity_id}; 
     Position_Component init_particle_pos   = {entity_id, Eigen::Vector2f(0.0, 0.0)};
     Velocity_Component init_particle_vel   = {entity_id, Eigen::Vector2f(0.0, 0.0)}; 
-    Rotation_Component init_rot_val        = {entity_id, 0.0}; 
+    Rotation_Component init_rot_val        = {entity_id, -45.0}; 
     Angular_Vel_Component init_rot_vel_val = {entity_id, 0.0}; 
     Render_Component init_render_val       = {entity_id, "./misc/BlueSquare.png",
                                             320, 320, 100, 100}; // x, y, h, w; 
@@ -139,9 +139,9 @@ int main() {
     int obj_id = entity_id;
     entity_id++;
     Connector_Component connector_val = {entity_id, 
-                                         Eigen::Vector2f(0.5, 0.5),
-                                         Eigen::Vector2f(0.01, 0.0), 
-                                         Eigen::Vector2f(0.0, 0.0),
+                                         Eigen::Vector2f(0.0, 0.5), //body pos
+                                         Eigen::Vector2f(0.5, 0.5), //external force 
+                                         0.0,
                                          obj_id};
 
     my_world.add_component<Connector_Component>(connector_val);
