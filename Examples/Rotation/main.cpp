@@ -151,7 +151,7 @@ int main() {
         
         for (int i = 0; i < 25; i ++){
             Connector_System(my_world);
-            Gravity_System(my_world);
+            //Gravity_System(my_world);
             //Constraint_System(my_world); 
             Newtonian_System(my_world, TEMP_DT/25);
         }
