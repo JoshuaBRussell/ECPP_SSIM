@@ -66,17 +66,6 @@ void Constraint_System(ECS_Manager &world){
         std::cout << "WARNING: Constraint System has not been initialized. Call 'Constraint_init(<arg>)'" << std::endl;
     }
 
-
-
-    // Assume that gravity is a thing  
-    for (auto it = world.get_component_begin<Force_Component>(); 
-              it < world.get_component_end<Force_Component>(); it++){
-         
-        Force_Component* force_comp_ptr = world.get_component<Force_Component>(it->entity_id); 
-        force_comp_ptr->force = Eigen::Vector2f(0.0, -0.81); // g = 9.81 m/s^2 | m = 1 
-    
-    }
-   
     // Need to have some way to ascribe entity locations in the global matrices,
     // and keep up with them in case the entity is encountered again in another 
     // constraint

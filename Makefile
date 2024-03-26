@@ -144,3 +144,10 @@ lin_constr: $(objects) lin_constr_main.o
 
 lin_constr_main.o:
 	$(CXX) -c $(compileFlags) Examples/LinearConstraint/main.cpp -o bin/lin_constr_main.o
+
+# Link the program and create the executable
+rotation: $(objects) rotation_main.o
+	$(CXX) $(objects) bin/rotation_main.o -o $(target) $(linkFlags)
+
+rotation_main.o:
+	$(CXX) -c $(compileFlags) Examples/Rotation/main.cpp -o bin/rotation_main.o
