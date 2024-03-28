@@ -133,7 +133,7 @@ int main() {
     
     
     int euler_id = entity_id;
-    std::cout << "Euler ID" << euler_id << std::endl;
+    
     Particle_Component init_particle_flag = {euler_id};
     
     Position_Component init_particle_pos  = {euler_id, Eigen::Vector2f(-1.0, 0.0)};
@@ -168,9 +168,10 @@ int main() {
     
     my_world.add_component<Fixed_Rot_Component>(particle_constr);
     
+    
     entity_id++;
     int rk_id = entity_id;
-    std::cout << "RK ID: " << rk_id << std::endl;
+    
     Particle_Component init_particle_flag1 = {rk_id};
     Position_Component init_particle_pos1  = {rk_id, Eigen::Vector2f(-1.0, 0.0)};
     Velocity_Component init_particle_vel1  = {rk_id, Eigen::Vector2f(0.0, 0.2)}; 
