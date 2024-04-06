@@ -151,3 +151,10 @@ rotation: $(objects) rotation_main.o
 
 rotation_main.o:
 	$(CXX) -c $(compileFlags) Examples/Rotation/main.cpp -o bin/rotation_main.o
+
+# Link the program and create the executable
+body_point: $(objects) body_point_main.o
+	$(CXX) $(objects) bin/body_point_main.o -o $(target) $(linkFlags)
+
+body_point_main.o:
+	$(CXX) -c $(compileFlags) Examples/BodyPointConstraint/main.cpp -o bin/body_point_main.o
