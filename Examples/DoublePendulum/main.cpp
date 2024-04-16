@@ -192,7 +192,7 @@ int main() {
     
     // Add Constraints
     entity_id++;
-    Fixed_Rot_Component particle1_constr = {entity_id, euler_id, Eigen::Vector2f(0.0, 0.0), 1.0};
+    Fixed_Rot_Component particle1_constr = {entity_id, euler_id, Eigen::Vector2f(0.0, 0.0), Eigen::Vector2f(0.0, 0.0)};
      
     entity_id++;
     Relative_Rot_Component particle2_constr = {entity_id, rk_id, euler_id, 1.0};
