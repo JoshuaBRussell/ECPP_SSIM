@@ -1,6 +1,7 @@
 #include "Constraint.hpp"
 
 #include <algorithm>
+#include <cmath>
 
 #include "ECSManager.hpp"
 
@@ -17,15 +18,15 @@
 #include "./components/Rotation_comp.hpp"
 #include "./components/Angular_Vel_comp.hpp"
 
-const size_t ENTITY_DIM = 2;
+const size_t ENTITY_DIM = 3;
 const float Kp_C = 0.0; 
 
 struct constr_info {
     int i; // constraint index;
     int j; // particle index
 
-    float J_sub_block[2] = {0.0};
-    float J_dot_sub_block[2] = {0.0};
+    float J_sub_block[ENTITY_DIM] = {};
+    float J_dot_sub_block[ENTITY_DIM] = {};
 };
 
 int add_id_if_unique(std::vector<int>* vec_ptr, int id){
@@ -87,14 +88,12 @@ void Constraint_System(ECS_Manager &world){
         
         
         Position_Component* pos_comp_ptr = world.get_component<Position_Component>(it->constr_entity);
-        std::cout << "CoM Pos: \n";
-        std::cout << "X: " << pos_comp_ptr->position.x() << " Y: " << pos_comp_ptr->position.y(); 
         Velocity_Component* vel_comp_ptr = world.get_component<Velocity_Component>(it->constr_entity); 
         Rotation_Component* rot_comp_ptr = world.get_component<Rotation_Component>(it->constr_entity);
         Angular_Vel_Component* ang_vel_comp_ptr = world.get_component<Angular_Vel_Component>(it->constr_entity);
         
         // Convert the constrained body point position from body space to world space
-        Eigen::Rotation2D<float> transform_matr = Eigen::Rotation2D<float>((-3.14159/180.0)*rot_comp_ptr->angle);
+        Eigen::Rotation2D<float> transform_matr = Eigen::Rotation2D<float>((3.14159/180.0)*rot_comp_ptr->angle);
         Eigen::Vector2f constr_body_pos = pos_comp_ptr->position + transform_matr * it->rel_body_pos;   
         
         std::cout << "\nCoM Pos: \n";
@@ -102,12 +101,22 @@ void Constraint_System(ECS_Manager &world){
         std::cout << "\nRot Pos: \n"; 
         std::cout << "X: " << (transform_matr * it->rel_body_pos).x() << " Y: " << (transform_matr * it->rel_body_pos).y();  
         std::cout << "\nNet Pos: \n"; 
-        std::cout << "X: " << constr_body_pos.x() << " Y: " << constr_body_pos.y();        struct constr_info constr_info;
+        std::cout << "X: " << constr_body_pos.x() << " Y: " << constr_body_pos.y();        
         
-        constr_info.i              = constrs_eval.size();
-        constr_info.j              = entity_offset;
-        constr_info.J_sub_block[0] = 2.0*(constr_body_pos.x());
-        constr_info.J_sub_block[1] = 2.0*(constr_body_pos.y());
+        struct constr_info constr_info;
+        constr_info.i = constrs_eval.size();
+        constr_info.j = entity_offset;
+        
+        constr_info.J_sub_block[0] = (constr_body_pos.x());
+        constr_info.J_sub_block[1] = (constr_body_pos.y());
+       
+        float sin_theta = std::sin((3.14159/180.0)*rot_comp_ptr->angle);
+        float cos_theta = std::cos((3.14159/180.0)*rot_comp_ptr->angle);
+        float jac_angle_component = constr_body_pos.x()*(-1.0*it->rel_body_pos.x()*sin_theta
+                                                                - it->rel_body_pos.y()*cos_theta)
+                                  + constr_body_pos.y()*(it->rel_body_pos.x()*cos_theta
+                                                           - it->rel_body_pos.y()*sin_theta);
+        constr_info.J_sub_block[2] = jac_angle_component;
 
         Eigen::Vector2f r = transform_matr * it->rel_body_pos;
         Eigen::Vector2f temp_vec = ang_vel_comp_ptr->w*Eigen::Vector2f(-r.y(), r.x());// Contribution to World Space Vel due to Rotation is a Cross Product
@@ -119,14 +128,25 @@ void Constraint_System(ECS_Manager &world){
         std::cout << "X: " << temp_vec.x() << " Y: " << temp_vec.y();  
         std::cout << "\nNet Vel: \n"; 
         std::cout << "X: " << constr_body_vel.x() << " Y: " << constr_body_vel.y() << "\n\n\n";  
-
-        constr_info.J_dot_sub_block[0] = 2.0*constr_body_vel.x(); 
-        constr_info.J_dot_sub_block[1] = 2.0*constr_body_vel.y();
+        
+        // Temp vars so I can get this working for now
+        float x = pos_comp_ptr->position.x();
+        float y = pos_comp_ptr->position.y();
+        float x_dot = vel_comp_ptr->velocity.x();
+        float y_dot = vel_comp_ptr->velocity.y(); 
+        float rx = it->rel_body_pos.x(); 
+        float ry = it->rel_body_pos.y();
+        float theta = rot_comp_ptr->angle;
+        float theta_dot = ang_vel_comp_ptr->w; 
+        constr_info.J_dot_sub_block[0] = (x_dot + theta_dot*(-rx*sin_theta - ry*cos_theta)); 
+        constr_info.J_dot_sub_block[1] = (y_dot + theta_dot*( rx*cos_theta - ry*sin_theta));
+        
+        constr_info.J_dot_sub_block[2] = theta_dot*(x*(ry*sin_theta - rx*cos_theta) - y*(rx*sin_theta + ry*cos_theta)); 
         
         constrs_vec.push_back(constr_info);
    
         //x^2 + y^2 - r^2
-        float constr_val = (constr_body_pos).squaredNorm() - it->radius*it->radius; 
+        float constr_val = 0.0;//(constr_body_pos).squaredNorm() - it->radius*it->radius; 
         constrs_eval.push_back(constr_val);
     }
 
@@ -218,9 +238,11 @@ void Constraint_System(ECS_Manager &world){
 
         J(it->i, it->j)   = it->J_sub_block[0]; 
         J(it->i, it->j+1) = it->J_sub_block[1];
-
+        J(it->i, it->j+2) = it->J_sub_block[2];
+        
         J_dot(it->i, it->j)   = it->J_dot_sub_block[0]; 
         J_dot(it->i, it->j+1) = it->J_dot_sub_block[1]; 
+        J_dot(it->i, it->j+2) = it->J_dot_sub_block[2]; 
     }
 
     
@@ -234,14 +256,21 @@ void Constraint_System(ECS_Manager &world){
     for (auto it = constr_entities.begin(); it < constr_entities.end(); it++){
         int entity_offset = 2*std::distance(constr_entities.begin(), it);
         
+        // Translational 
         Velocity_Component* vel_comp_ptr = world.get_component<Velocity_Component>(*it);  
         Force_Component* force_comp_ptr = world.get_component<Force_Component>(*it); 
         
+        // Rotational
+        Angular_Vel_Component* ang_vel_comp_ptr = world.get_component<Angular_Vel_Component>(*it); 
+        Torque_Component* torque_comp_ptr = world.get_component<Torque_Component>(*it); 
+        
         q_dot(entity_offset    ) = vel_comp_ptr->velocity.x(); 
         q_dot(entity_offset + 1) = vel_comp_ptr->velocity.y();
-
+        q_dot(entity_offset + 2) = ang_vel_comp_ptr->w;
+        
         Q(entity_offset    ) = force_comp_ptr->force.x(); 
         Q(entity_offset + 1) = force_comp_ptr->force.y();
+        Q(entity_offset + 2) = torque_comp_ptr->torque;
 
     }
 
@@ -255,7 +284,12 @@ void Constraint_System(ECS_Manager &world){
     // Solve Global Matrices
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> A = J*M.inverse()*J.transpose();
     Eigen::VectorXf b = -1.0*J_dot*q_dot - J*M.inverse()*Q - Kp_C*C;
-    
+    std::cout << "A: " << A << std::endl;
+    std::cout << "J: " << J << std::endl;
+    std::cout << "M: " << M << std::endl;
+    std::cout << "J_dot: " << J_dot << std::endl;
+    std::cout << "q_dot: " << q_dot << std::endl;
+    std::cout << "b: " << b << std::endl; 
     Eigen::VectorXf x = A.fullPivHouseholderQr().solve(b);
     
     //\hat{Q}  = J^T\lambda
@@ -270,19 +304,10 @@ void Constraint_System(ECS_Manager &world){
         force_comp_ptr->force.x() = force_comp_ptr->force.x() + Q_hat(entity_offset    ); 
         force_comp_ptr->force.y() = force_comp_ptr->force.y() + Q_hat(entity_offset + 1);
         
-        
         // Apply the Torques
-        Rotation_Component* rot_comp_ptr = world.get_component<Rotation_Component>(*it); 
+        // Positive Torque is CCW 
         Torque_Component* torque_comp_ptr = world.get_component<Torque_Component>(*it);
-        
-        // Transform force into body space from world space
-        Eigen::Rotation2D<float> transform_matr = Eigen::Rotation2D<float>((-3.14159/180.0)*rot_comp_ptr->angle);
-        Eigen::Vector2f conn_force_body = transform_matr * Eigen::Vector2f(Q_hat(entity_offset), 
-                                                                           Q_hat(entity_offset + 1)); 
-         
-        // Positive Torque is CCW
-        float torque = (conn_force_body.x() * 0.0 - conn_force_body.y() * 1.0); 
-        torque_comp_ptr->torque += torque; 
+        torque_comp_ptr->torque += Q_hat(entity_offset + 2); 
          
         std::cout << "Constraint Force: \n";
         std::cout << "X: " << Q_hat(entity_offset) << " Y: " << Q_hat(entity_offset + 1) << std::endl;
@@ -290,8 +315,6 @@ void Constraint_System(ECS_Manager &world){
         std::cout << "X: " << force_comp_ptr->force.x() << " Y: " << force_comp_ptr->force.y() << std::endl;
         std::cout << "Torque: \n";
         std::cout << torque_comp_ptr->torque << "\n" << std::endl;
-        std::cout << "Constraint Force Body Space: \n";  
-        std::cout << "X: " << conn_force_body.x() << " Y: " << conn_force_body.y() << std::endl; 
     }
 
 }
