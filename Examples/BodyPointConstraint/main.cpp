@@ -117,7 +117,7 @@ int main() {
     int rk_id = entity_id+1;
     
     Particle_Component init_particle_flag1 = {rk_id};
-    Position_Component init_particle_pos1  = {rk_id, Eigen::Vector2f(0.0, -1.0)};
+    Position_Component init_particle_pos1  = {rk_id, Eigen::Vector2f(1.0, 0.0)};
     Velocity_Component init_particle_vel1  = {rk_id, Eigen::Vector2f(0.0, 0.0)}; 
     Rotation_Component init_rot_val1       = {rk_id, 0.0}; 
     Render_Component init_render_val1      = {rk_id, "./misc/BlueSquare.png",
@@ -133,7 +133,7 @@ int main() {
     entity_id++; 
     Fixed_Rot_Component particle1_constr = {entity_id, rk_id, 
                                             Eigen::Vector2f(0.0,  0.0), // world space point 
-                                            Eigen::Vector2f(0.0, 1.0),  // body space  
+                                            Eigen::Vector2f(-1.0, 0.0),  // body space  
                                             0.0}; 
     
     my_world.add_component<Particle_Component>(init_particle_flag1);
