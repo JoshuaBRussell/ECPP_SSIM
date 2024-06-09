@@ -121,7 +121,7 @@ int main() {
     Particle_Component init_particle_flag1 = {rk_id};
     Position_Component init_particle_pos1  = {rk_id, Eigen::Vector2f(0.0, 0.0)};
     Velocity_Component init_particle_vel1  = {rk_id, Eigen::Vector2f(0.0, 0.0)}; 
-    Rotation_Component init_rot_val1       = {rk_id, 90.0}; 
+    Rotation_Component init_rot_val1       = {rk_id, 1.5708}; 
     Render_Component init_render_val1      = {rk_id, "./misc/BlueSquare.png",
                                               320, 320, 100, 100}; // x, y, h, w; 
     ODE_Component init_ode_val1            = {rk_id, INT_METHOD::EULER}; 
@@ -172,7 +172,7 @@ int main() {
             Rotation_Component* ang_comp_ptr = my_world.get_component<Rotation_Component>(rk_id);
             Mass_Component* mass_comp_ptr = my_world.get_component<Mass_Component>(rk_id);
             float mass = mass_comp_ptr->m;
-            t_comp_ptr->torque = -9.81*length*mass*std::sin((3.14159/180.0)*ang_comp_ptr->angle);
+            t_comp_ptr->torque = -9.81*length*mass*std::sin(ang_comp_ptr->angle);
             
             Newtonian_System(my_world, TEMP_DT/50);
             

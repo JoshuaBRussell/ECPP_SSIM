@@ -93,7 +93,7 @@ void Constraint_System(ECS_Manager &world){
         Angular_Vel_Component* ang_vel_comp_ptr = world.get_component<Angular_Vel_Component>(it->constr_entity);
         
         // Convert the constrained body point position from body space to world space
-        Eigen::Rotation2D<float> transform_matr = Eigen::Rotation2D<float>((3.14159/180.0)*rot_comp_ptr->angle);
+        Eigen::Rotation2D<float> transform_matr = Eigen::Rotation2D<float>(rot_comp_ptr->angle);
         Eigen::Vector2f constr_body_pos = pos_comp_ptr->position + transform_matr * it->rel_body_pos;   
         
         std::cout << "\nCoM Pos: \n";
@@ -107,8 +107,9 @@ void Constraint_System(ECS_Manager &world){
         constr_info.i = constrs_eval.size();
         constr_info.j = entity_offset;
         
-        float sin_theta = std::sin((3.14159/180.0)*rot_comp_ptr->angle);
-        float cos_theta = std::cos((3.14159/180.0)*rot_comp_ptr->angle); 
+        float sin_theta = std::sin(rot_comp_ptr->angle);
+        float cos_theta = std::cos(rot_comp_ptr->angle); 
+        
         // Temp vars so I can get this working for now
         float x = pos_comp_ptr->position.x();
         float y = pos_comp_ptr->position.y();
@@ -117,7 +118,7 @@ void Constraint_System(ECS_Manager &world){
         float rx = it->rel_body_pos.x(); 
         float ry = it->rel_body_pos.y();
         float theta = rot_comp_ptr->angle;
-        float theta_dot = (3.14159/180.0)*ang_vel_comp_ptr->w;
+        float theta_dot = ang_vel_comp_ptr->w;
         
 
         constr_info.J_sub_block[0][0] = 1.0;
