@@ -115,11 +115,13 @@ int main() {
     my_world.add_component<Rotation_Component>(bg_rot_comp); 
 
     int rk_id = entity_id+1;
+
+    float length = 0.316;
     
     Particle_Component init_particle_flag1 = {rk_id};
-    Position_Component init_particle_pos1  = {rk_id, Eigen::Vector2f(1.0, 0.0)};
+    Position_Component init_particle_pos1  = {rk_id, Eigen::Vector2f(0.0, 0.0)};
     Velocity_Component init_particle_vel1  = {rk_id, Eigen::Vector2f(0.0, 0.0)}; 
-    Rotation_Component init_rot_val1       = {rk_id, 0.0}; 
+    Rotation_Component init_rot_val1       = {rk_id, 90.0}; 
     Render_Component init_render_val1      = {rk_id, "./misc/BlueSquare.png",
                                               320, 320, 100, 100}; // x, y, h, w; 
     ODE_Component init_ode_val1            = {rk_id, INT_METHOD::EULER}; 
@@ -127,13 +129,13 @@ int main() {
     Mass_Component init_mass_val1          = {rk_id, 1.0}; 
     Gravity_Component init_grav_val1       = {rk_id}; 
     Torque_Component init_torque_val1      = {rk_id, 0.0}; 
-    Rot_Inertia_Component rot_inertia_val1 = {rk_id, 1.0};
+    Rot_Inertia_Component rot_inertia_val1 = {rk_id, init_mass_val1.m*length*length};
     Angular_Vel_Component rot_vel_val1     = {rk_id, 0.0}; 
     
     entity_id++; 
     Fixed_Rot_Component particle1_constr = {entity_id, rk_id, 
                                             Eigen::Vector2f(0.0,  0.0), // world space point 
-                                            Eigen::Vector2f(-1.0, 0.0),  // body space  
+                                            Eigen::Vector2f(0.0, 0.0),  // body space  
                                             0.0}; 
     
     my_world.add_component<Particle_Component>(init_particle_flag1);
@@ -163,21 +165,27 @@ int main() {
     {
         i++; 
         //if (i%30 == 0){ 
-        for (int i = 0; i < 25; i ++){
-            Gravity_System(my_world); 
-            Constraint_System(my_world);
-            Newtonian_System(my_world, TEMP_DT/25);
+        for (int i = 0; i < 50; i ++){
+            //Gravity_System(my_world); 
+            //Constraint_System(my_world);
+            Torque_Component* t_comp_ptr = my_world.get_component<Torque_Component>(rk_id);  
+            Rotation_Component* ang_comp_ptr = my_world.get_component<Rotation_Component>(rk_id);
+            Mass_Component* mass_comp_ptr = my_world.get_component<Mass_Component>(rk_id);
+            float mass = mass_comp_ptr->m;
+            t_comp_ptr->torque = -9.81*length*mass*std::sin((3.14159/180.0)*ang_comp_ptr->angle);
+            
+            Newtonian_System(my_world, TEMP_DT/50);
             
             Angular_Vel_Component* ang_vel_comp_ptr = my_world.get_component<Angular_Vel_Component>(rk_id);
-            Rotation_Component* ang_comp_ptr = my_world.get_component<Rotation_Component>(rk_id);
+            
             std::cout << "Angle: " << ang_comp_ptr->angle << " \n"; 
             std::cout << "Angle Vel: " << ang_vel_comp_ptr ->w << " \n";
-
+            std::cout << "Torque: " << t_comp_ptr->torque << "\n";
 
             // This normally gets reset in Newtonian Sys - not doing that so it
             // can be displayed for debug purposes.
             Force_Component* f_comp_ptr = my_world.get_component<Force_Component>(rk_id);
-            Torque_Component* t_comp_ptr = my_world.get_component<Torque_Component>(rk_id);
+            
             f_comp_ptr->force = Eigen::Vector2f(0.0, 0.0);
             t_comp_ptr->torque = 0.0; 
         }
