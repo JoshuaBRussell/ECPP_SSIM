@@ -113,15 +113,16 @@ int main() {
     Rotation_Component bg_rot_comp       = {bg_id, 0.0}; 
     my_world.add_component<Render_Component>(bg_render_comp);
     my_world.add_component<Rotation_Component>(bg_rot_comp); 
-
-    int rk_id = entity_id+1;
+    
+    entity_id++;
+    int rk_id = entity_id;
 
     Particle_Component init_particle_flag1 = {rk_id};
     Position_Component init_particle_pos1  = {rk_id, Eigen::Vector2f(1.0, 0.0)};
     Velocity_Component init_particle_vel1  = {rk_id, Eigen::Vector2f(0.0, 0.0)}; 
     Rotation_Component init_rot_val1       = {rk_id, 1.5708}; 
     Render_Component init_render_val1      = {rk_id, "./misc/BlueSquare.png",
-                                              320, 320, 100, 100}; // x, y, h, w; 
+                                              320, 320, 50, 200}; // x, y, h, w; 
     ODE_Component init_ode_val1            = {rk_id, INT_METHOD::RK4}; 
     Force_Component init_force_val1        = {rk_id, Eigen::Vector2f(0.0, 0.0)};
     Mass_Component init_mass_val1          = {rk_id, 1.0}; 
@@ -135,7 +136,10 @@ int main() {
                                             Eigen::Vector2f(0.0,  0.0), // world space point 
                                             Eigen::Vector2f(0.0, 1.0),  // body space  
                                             0.0}; 
-    
+    Render_Component init_render_val2      = {entity_id, "./misc/RedCirc.png",
+                                              320, 320, 15, 15}; 
+    Rotation_Component init_rot_val2       = {entity_id, 1.5708};
+
     my_world.add_component<Particle_Component>(init_particle_flag1);
     my_world.add_component<Position_Component>(init_particle_pos1);
     my_world.add_component<Velocity_Component>(init_particle_vel1);
@@ -150,6 +154,8 @@ int main() {
     my_world.add_component<Angular_Vel_Component>(rot_vel_val1);    
     
     my_world.add_component<Fixed_Rot_Component>(particle1_constr);
+    my_world.add_component<Render_Component>(init_render_val2);
+    my_world.add_component<Rotation_Component>(init_rot_val2);
     
     // Convert the constrained body point position from body space to world space
     Eigen::Rotation2D<float> transform_matr = Eigen::Rotation2D<float>((3.14159/180.0)*-45.0);
@@ -170,8 +176,8 @@ int main() {
             
             Angular_Vel_Component* ang_vel_comp_ptr = my_world.get_component<Angular_Vel_Component>(rk_id);
             Rotation_Component* ang_comp_ptr = my_world.get_component<Rotation_Component>(rk_id); 
-            std::cout << "Angle: " << ang_comp_ptr->angle << " \n"; 
-            std::cout << "Angle Vel: " << ang_vel_comp_ptr ->w << " \n";
+            //std::cout << "Angle: " << ang_comp_ptr->angle << " \n"; 
+            //std::cout << "Angle Vel: " << ang_vel_comp_ptr ->w << " \n";
 
             // This normally gets reset in Newtonian Sys - not doing that so it
             // can be displayed for debug purposes.
