@@ -118,7 +118,7 @@ int main() {
     int rk_id = entity_id;
 
     Particle_Component init_particle_flag1 = {rk_id};
-    Position_Component init_particle_pos1  = {rk_id, Eigen::Vector2f(1.0, 0.0)};
+    Position_Component init_particle_pos1  = {rk_id, Eigen::Vector2f(2.0, 2.0)};
     Velocity_Component init_particle_vel1  = {rk_id, Eigen::Vector2f(0.0, 0.0)}; 
     Rotation_Component init_rot_val1       = {rk_id, 1.5708}; 
     Render_Component init_render_val1      = {rk_id, "./misc/BlueSquare.png",
@@ -133,11 +133,13 @@ int main() {
     
     entity_id++; 
     Fixed_Rot_Component particle1_constr = {entity_id, rk_id, 
-                                            Eigen::Vector2f(0.0,  0.0), // world space point 
+                                            Eigen::Vector2f(1.0,  2.0), // world space point 
                                             Eigen::Vector2f(0.0, 1.0),  // body space  
                                             0.0}; 
     Render_Component init_render_val2      = {entity_id, "./misc/RedCirc.png",
                                               320, 320, 15, 15}; 
+    Position_Component init_particle_pos2  = {entity_id, Eigen::Vector2f(1.0,  2.0)}; 
+    Particle_Component init_particle_flag2 = {entity_id}; 
     Rotation_Component init_rot_val2       = {entity_id, 1.5708};
 
     my_world.add_component<Particle_Component>(init_particle_flag1);
@@ -154,6 +156,8 @@ int main() {
     my_world.add_component<Angular_Vel_Component>(rot_vel_val1);    
     
     my_world.add_component<Fixed_Rot_Component>(particle1_constr);
+    my_world.add_component<Position_Component>(init_particle_pos2); 
+    my_world.add_component<Particle_Component>(init_particle_flag2); 
     my_world.add_component<Render_Component>(init_render_val2);
     my_world.add_component<Rotation_Component>(init_rot_val2);
     

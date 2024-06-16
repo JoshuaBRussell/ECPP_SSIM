@@ -150,10 +150,8 @@ void Constraint_System(ECS_Manager &world){
         
         constrs_vec.push_back(constr_info);
    
-        //x^2 + y^2 - r^2
-        float constr_val = 0.0;//(constr_body_pos).squaredNorm() - it->radius*it->radius; 
-        constrs_eval.push_back(constr_body_pos.x());
-        constrs_eval.push_back(constr_body_pos.y()); 
+        constrs_eval.push_back(constr_body_pos.x() - it->fixed_point.x());
+        constrs_eval.push_back(constr_body_pos.y() - it->fixed_point.y()); 
     }
     // ---- Form Global Matrices/Vectors ---- //
    
