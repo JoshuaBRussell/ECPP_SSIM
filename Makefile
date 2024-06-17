@@ -158,3 +158,10 @@ body_point: $(objects) body_point_main.o
 
 body_point_main.o:
 	$(CXX) -c $(compileFlags) Examples/BodyPointConstraint/main.cpp -o bin/body_point_main.o
+
+# Link the program and create the executable
+rigid_double_pend: $(objects) rigid_double_pend_main.o
+	$(CXX) $(objects) bin/rigid_double_pend_main.o -o $(target) $(linkFlags)
+
+rigid_double_pend_main.o:
+	$(CXX) -c $(compileFlags) Examples/RigidBodyDoublePendulum/main.cpp -o bin/rigid_double_pend_main.o
