@@ -8,6 +8,7 @@ struct Fixed_Rot_Component {
 
     int constr_entity; 
     Eigen::Vector2f fixed_point;
+    Eigen::Vector2f rel_body_pos;
     float radius;
 };
 
