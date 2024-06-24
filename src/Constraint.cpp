@@ -149,7 +149,7 @@ void Constraint_System(ECS_Manager &world){
         constr_info.J_dot_sub_block[1][2] = theta_dot*(-rx*sin_theta - ry*cos_theta); 
         
         constrs_vec.push_back(constr_info);
-        std::cout << "Fixed Rot Size: " << constrs_vec.size() << "\n";
+        //std::cout << "Fixed Rot Size: " << constrs_vec.size() << "\n";
    
         constrs_eval.push_back(constr_body_pos.x() - it->fixed_point.x());
         constrs_eval.push_back(constr_body_pos.y() - it->fixed_point.y()); 
@@ -214,7 +214,7 @@ void Constraint_System(ECS_Manager &world){
         
         // Add the constraint related info to the vec
         constrs_vec.push_back(constr_info1);
-        std::cout << "Rel Rot Size#1: " << constrs_vec.size() << "\n"; 
+        //std::cout << "Rel Rot Size#1: " << constrs_vec.size() << "\n"; 
 
         // Constraint-Entity Pair #2  
         int constr_entity2 = it->constr_entity2;
@@ -245,7 +245,7 @@ void Constraint_System(ECS_Manager &world){
         
         // Add the constraint related info to the vec 
         constrs_vec.push_back(constr_info2);
-        std::cout << "Rel Rot Size#2: " << constrs_vec.size() << "\n"; 
+        //std::cout << "Rel Rot Size#2: " << constrs_vec.size() << "\n"; 
          
         // Evaluate and save the constaints
         Position_Component* pos_comp_ptr1 = world.get_component<Position_Component>(constr_entity1); 
@@ -325,31 +325,31 @@ void Constraint_System(ECS_Manager &world){
     // forces  
     for (size_t i = 0; i < constrs_eval.size(); i++){
        C(i) = constrs_eval[i];
-       std::cout << "C: \n" << C << "\n";
+       //std::cout << "C: \n" << C << "\n";
     }
 
     // Solve Global Matrices
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> A = J*M.inverse()*J.transpose();
     Eigen::VectorXf b = -1.0*J_dot*q_dot - J*M.inverse()*Q - Kp_C*C;
-    std::cout << "A: " << A << std::endl;
-    std::cout << "J: " << J << std::endl;
-    std::cout << "M: " << M << std::endl;
-    std::cout << "J_dot: " << J_dot << std::endl;
-    std::cout << "q_dot: " << q_dot << std::endl;
-    std::cout << "b: " << b << std::endl;
-    std::cout << "-1.0*J_dot*q_dot\n" << -1.0*J_dot*q_dot << "\n"; 
-    std::cout << "- J*M.inverse()*Q\n" << - J*M.inverse()*Q << "\n"; 
-    std::cout << "M.inverse()\n" << M.inverse() << "\n";
-    std::cout << "Q: \n" << Q << "\n";
+    //std::cout << "A: " << A << std::endl;
+    //std::cout << "J: " << J << std::endl;
+    //std::cout << "M: " << M << std::endl;
+    //std::cout << "J_dot: " << J_dot << std::endl;
+    //std::cout << "q_dot: " << q_dot << std::endl;
+    //std::cout << "b: " << b << std::endl;
+    //std::cout << "-1.0*J_dot*q_dot\n" << -1.0*J_dot*q_dot << "\n"; 
+    //std::cout << "- J*M.inverse()*Q\n" << - J*M.inverse()*Q << "\n"; 
+    //std::cout << "M.inverse()\n" << M.inverse() << "\n";
+    //std::cout << "Q: \n" << Q << "\n";
     Eigen::VectorXf x = A.fullPivHouseholderQr().solve(b);
     
     //\hat{Q}  = J^T\lambda
     Eigen::VectorXf Q_hat = J.transpose()*x;    
-    std::cout << "Q Hat: " << Q_hat << "\n";
+    //std::cout << "Q Hat: " << Q_hat << "\n";
     // Apply Constraint Forces
     for (auto it = constr_entities.begin(); it < constr_entities.end(); it++){
         int entity_offset = ENTITY_DIM*std::distance(constr_entities.begin(), it);
-        std::cout << "entity_offset: " << entity_offset << "\n";  
+        //std::cout << "entity_offset: " << entity_offset << "\n";  
         // Apply the Forces
         Force_Component* force_comp_ptr = world.get_component<Force_Component>(*it); 
         force_comp_ptr->force.x() = force_comp_ptr->force.x() + Q_hat(entity_offset    ); 
@@ -360,7 +360,7 @@ void Constraint_System(ECS_Manager &world){
         Torque_Component* torque_comp_ptr = world.get_component<Torque_Component>(*it);
         torque_comp_ptr->torque += Q_hat(entity_offset + 2); 
         /* 
-        std::cout << "Constraint Force: \n";
+        //std::cout << "Constraint Force: \n";
         std::cout << "X: " << Q_hat(entity_offset) << " Y: " << Q_hat(entity_offset + 1) << std::endl;
         std::cout << "Net Force: \n"; 
         std::cout << "X: " << force_comp_ptr->force.x() << " Y: " << force_comp_ptr->force.y() << std::endl;

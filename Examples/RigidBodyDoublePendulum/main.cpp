@@ -70,7 +70,7 @@ int main() {
     raylib::Color textColor(LIGHTGRAY);
     raylib::Window w(SCREEN_WIDTH_IN_PIXELS, SCREEN_HEIGHT_IN_PIXELS, WINDOW_NAME);
     
-    SetTargetFPS(TARGET_FPS); 
+    //SetTargetFPS(TARGET_FPS); 
      
     ECS_Manager my_world;
 
