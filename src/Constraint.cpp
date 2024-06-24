@@ -62,21 +62,29 @@ void Constraint_System_Init(ECS_Manager &world){
 
 }
 
+// Need to have some way to ascribe entity locations in the global matrices,
+// and keep up with them in case the entity is encountered again in another 
+// constraint
+// This just used the index
+static std::vector<int> constr_entities;
+static std::vector<constr_info> constrs_vec;
+static std::vector<float> constrs_eval;
+
 void Constraint_System(ECS_Manager &world){
     
+    // Clear these at the beginning to be sure they are empty
+    // Empties the results, but keeps the capacity unchanged,
+    // thereby reducing mallac calls under the hood
+    constr_entities.clear();
+    constrs_vec.clear();
+    constrs_eval.clear();
 
     // Check if init was called
     if (!has_been_init){
         std::cout << "WARNING: Constraint System has not been initialized. Call 'Constraint_init(<arg>)'" << std::endl;
     }
 
-    // Need to have some way to ascribe entity locations in the global matrices,
-    // and keep up with them in case the entity is encountered again in another 
-    // constraint
-    // This just used the index
-    std::vector<int> constr_entities;
-    std::vector<constr_info> constrs_vec;
-    std::vector<float> constrs_eval; 
+     
     
     // Collect info needed for each constraint
     for (auto it = world.get_component_begin<Fixed_Rot_Component>(); 
