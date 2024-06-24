@@ -19,7 +19,9 @@ struct Relative_Rot_Component {
     // The two entities to constrain
     int constr_entity1;
     int constr_entity2;
-
+    
+    Eigen::Vector2f rel_body_pos1;
+    Eigen::Vector2f rel_body_pos2; 
     float radius;
 
 };

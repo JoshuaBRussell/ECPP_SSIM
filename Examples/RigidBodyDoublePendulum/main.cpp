@@ -115,33 +115,65 @@ int main() {
     my_world.add_component<Rotation_Component>(bg_rot_comp); 
     
     entity_id++;
-    int rk_id = entity_id;
-
-    Particle_Component init_particle_flag1 = {rk_id};
-    Position_Component init_particle_pos1  = {rk_id, Eigen::Vector2f(2.0, 2.0)};
-    Velocity_Component init_particle_vel1  = {rk_id, Eigen::Vector2f(0.0, 0.0)}; 
-    Rotation_Component init_rot_val1       = {rk_id, 1.5708}; 
-    Render_Component init_render_val1      = {rk_id, "./misc/BlueSquare.png",
-                                              320, 320, 50, 200}; // x, y, h, w; 
-    ODE_Component init_ode_val1            = {rk_id, INT_METHOD::RK4}; 
-    Force_Component init_force_val1        = {rk_id, Eigen::Vector2f(0.0, 0.0)};
-    Mass_Component init_mass_val1          = {rk_id, 1.0}; 
-    Gravity_Component init_grav_val1       = {rk_id}; 
-    Torque_Component init_torque_val1      = {rk_id, 0.0}; 
-    Rot_Inertia_Component rot_inertia_val1 = {rk_id, 1.0};
-    Angular_Vel_Component rot_vel_val1     = {rk_id, 0.0}; 
+    int rb1_id = entity_id;
     
+    // First Rigid Body
+    Particle_Component init_particle_flag1 = {rb1_id};
+    Position_Component init_particle_pos1  = {rb1_id, Eigen::Vector2f(1.0, 0.0)};
+    Velocity_Component init_particle_vel1  = {rb1_id, Eigen::Vector2f(0.0, 0.0)}; 
+    Rotation_Component init_rot_val1       = {rb1_id, 1.5707}; 
+    Render_Component init_render_val1      = {rb1_id, "./misc/BlueSquare.png",
+                                              320, 320, 50, 200}; // x, y, h, w; 
+    ODE_Component init_ode_val1            = {rb1_id, INT_METHOD::RK4}; 
+    Force_Component init_force_val1        = {rb1_id, Eigen::Vector2f(0.0, 0.0)};
+    Mass_Component init_mass_val1          = {rb1_id, 1.0}; 
+    Gravity_Component init_grav_val1       = {rb1_id}; 
+    Torque_Component init_torque_val1      = {rb1_id, 0.0}; 
+    Rot_Inertia_Component rot_inertia_val1 = {rb1_id, 1.0};
+    Angular_Vel_Component rot_vel_val1     = {rb1_id, 0.0}; 
+    
+    entity_id++;
+    int rb2_id = entity_id; 
+    // Second Rigid Body
+    Particle_Component init_particle_flag2 = {rb2_id};
+    Position_Component init_particle_pos2  = {rb2_id, Eigen::Vector2f(2.0, -1.0)};
+    Velocity_Component init_particle_vel2  = {rb2_id, Eigen::Vector2f(0.0, 0.0)}; 
+    Rotation_Component init_rot_val2       = {rb2_id, 0.0}; 
+    Render_Component init_render_val2      = {rb2_id, "./misc/BlueSquare.png",
+                                              320, 320, 50, 200}; // x, y, h, w; 
+    ODE_Component init_ode_val2            = {rb2_id, INT_METHOD::RK4}; 
+    Force_Component init_force_val2        = {rb2_id, Eigen::Vector2f(0.0, 0.0)};
+    Mass_Component init_mass_val2          = {rb2_id, 1.0}; 
+    Gravity_Component init_grav_val2       = {rb2_id}; 
+    Torque_Component init_torque_val2      = {rb2_id, 0.0}; 
+    Rot_Inertia_Component rot_inertia_val2 = {rb2_id, 1.0};
+    Angular_Vel_Component rot_vel_val2     = {rb2_id, 0.0}; 
+   
     entity_id++; 
-    Fixed_Rot_Component particle1_constr = {entity_id, rk_id, 
-                                            Eigen::Vector2f(1.0,  2.0), // world space point 
+    // Constraint Entity 1
+    Fixed_Rot_Component fixed_rot_constr = {entity_id, rb1_id, 
+                                            Eigen::Vector2f(0.0,  0.0), // world space point 
                                             Eigen::Vector2f(0.0, 1.0),  // body space  
                                             0.0}; 
-    Render_Component init_render_val2      = {entity_id, "./misc/RedCirc.png",
+    Render_Component init_constr_rend1      = {entity_id, "./misc/RedCirc.png",
                                               320, 320, 15, 15}; 
-    Position_Component init_particle_pos2  = {entity_id, Eigen::Vector2f(1.0,  2.0)}; 
-    Particle_Component init_particle_flag2 = {entity_id}; 
-    Rotation_Component init_rot_val2       = {entity_id, 1.5708};
+    Position_Component init_constr_pos1     = {entity_id, Eigen::Vector2f(0.0,  0.0)}; 
+    Particle_Component init_particle_flag3  = {entity_id}; 
+    Rotation_Component init_constr_rot_val1     = {entity_id, 1.5708};
+    
+    entity_id++;
+    // Constraint Entity 2 
+    Relative_Rot_Component rel_rot_constr = {entity_id, rb1_id, rb2_id, 
+                                            Eigen::Vector2f(0.0, -1.0), // world space point 
+                                            Eigen::Vector2f(0.0, 1.0),  // body space  
+                                            0.0}; 
+    Render_Component init_constr_rend2      = {entity_id, "./misc/RedCirc.png",
+                                              320, 320, 15, 15}; 
+    Position_Component init_constr_pos2     = {entity_id, Eigen::Vector2f(0.0,  -2.0)}; 
+    Particle_Component init_particle_flag4  = {entity_id}; 
+    Rotation_Component init_constr_rot_val2     = {entity_id, 1.5708};
 
+    // Add First Rigid Body's Components
     my_world.add_component<Particle_Component>(init_particle_flag1);
     my_world.add_component<Position_Component>(init_particle_pos1);
     my_world.add_component<Velocity_Component>(init_particle_vel1);
@@ -155,11 +187,33 @@ int main() {
     my_world.add_component<Rot_Inertia_Component>(rot_inertia_val1); 
     my_world.add_component<Angular_Vel_Component>(rot_vel_val1);    
     
-    my_world.add_component<Fixed_Rot_Component>(particle1_constr);
-    my_world.add_component<Position_Component>(init_particle_pos2); 
-    my_world.add_component<Particle_Component>(init_particle_flag2); 
+    // Add the Second Rigid Body's Components 
+    my_world.add_component<Particle_Component>(init_particle_flag2);
+    my_world.add_component<Position_Component>(init_particle_pos2);
+    my_world.add_component<Velocity_Component>(init_particle_vel2);
     my_world.add_component<Render_Component>(init_render_val2);
-    my_world.add_component<Rotation_Component>(init_rot_val2);
+    my_world.add_component<Rotation_Component>(init_rot_val2); 
+    my_world.add_component<ODE_Component>(init_ode_val2);
+    my_world.add_component<Force_Component>(init_force_val2); 
+    my_world.add_component<Mass_Component>(init_mass_val2); 
+    my_world.add_component<Gravity_Component>(init_grav_val2); 
+    my_world.add_component<Torque_Component>(init_torque_val2);
+    my_world.add_component<Rot_Inertia_Component>(rot_inertia_val2); 
+    my_world.add_component<Angular_Vel_Component>(rot_vel_val2); 
+    
+    // Add the Fixed Rotation Constraint's components
+    my_world.add_component<Fixed_Rot_Component>(fixed_rot_constr);
+    my_world.add_component<Position_Component>(init_constr_pos1); 
+    my_world.add_component<Particle_Component>(init_particle_flag3); 
+    my_world.add_component<Render_Component>(init_constr_rend1);
+    my_world.add_component<Rotation_Component>(init_constr_rot_val1);
+    
+    // Add the Relative Rotation Constraint's components
+    my_world.add_component<Relative_Rot_Component>(rel_rot_constr);
+    my_world.add_component<Position_Component>(init_constr_pos2); 
+    my_world.add_component<Particle_Component>(init_particle_flag4); 
+    my_world.add_component<Render_Component>(init_constr_rend2);
+    my_world.add_component<Rotation_Component>(init_constr_rot_val2); 
     
     // Convert the constrained body point position from body space to world space
     Eigen::Rotation2D<float> transform_matr = Eigen::Rotation2D<float>((3.14159/180.0)*-45.0);
@@ -178,18 +232,18 @@ int main() {
             Constraint_System(my_world);
             Newtonian_System(my_world, TEMP_DT/100);
             
-            Angular_Vel_Component* ang_vel_comp_ptr = my_world.get_component<Angular_Vel_Component>(rk_id);
-            Rotation_Component* ang_comp_ptr = my_world.get_component<Rotation_Component>(rk_id); 
+            //Angular_Vel_Component* ang_vel_comp_ptr = my_world.get_component<Angular_Vel_Component>(rk_id);
+            //Rotation_Component* ang_comp_ptr = my_world.get_component<Rotation_Component>(rk_id); 
             //std::cout << "Angle: " << ang_comp_ptr->angle << " \n"; 
             //std::cout << "Angle Vel: " << ang_vel_comp_ptr ->w << " \n";
 
             // This normally gets reset in Newtonian Sys - not doing that so it
             // can be displayed for debug purposes.
-            Force_Component* f_comp_ptr = my_world.get_component<Force_Component>(rk_id);
-            Torque_Component* t_comp_ptr = my_world.get_component<Torque_Component>(rk_id); 
+            //Force_Component* f_comp_ptr = my_world.get_component<Force_Component>(rk_id);
+            //Torque_Component* t_comp_ptr = my_world.get_component<Torque_Component>(rk_id); 
             
-            f_comp_ptr->force = Eigen::Vector2f(0.0, 0.0);
-            t_comp_ptr->torque = 0.0; 
+            //f_comp_ptr->force = Eigen::Vector2f(0.0, 0.0);
+            //t_comp_ptr->torque = 0.0; 
         }
         
         // Converts Physical Coordinates to something the Render_System can use (Screen Coords)
