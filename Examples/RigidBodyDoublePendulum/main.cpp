@@ -229,7 +229,7 @@ int main() {
         //if (i%30 == 0){ 
         for (int i = 0; i < 100; i ++){
             Gravity_System(my_world); 
-            Constraint_System(my_world);
+            //Constraint_System(my_world);
             Newtonian_System(my_world, TEMP_DT/100);
             
             //Angular_Vel_Component* ang_vel_comp_ptr = my_world.get_component<Angular_Vel_Component>(rk_id);
