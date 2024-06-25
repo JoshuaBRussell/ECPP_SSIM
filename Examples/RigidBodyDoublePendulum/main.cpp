@@ -82,8 +82,7 @@ int main() {
         .screen_height_in_meters = SCREEN_HEIGHT_METERS
     };
     
-    Render_init(render_config);
-    Constraint_System_Init(my_world); 
+     
     
     my_world.register_component<Render_Component>();
     my_world.register_component<Position_Component>();
@@ -215,12 +214,11 @@ int main() {
     my_world.add_component<Render_Component>(init_constr_rend2);
     my_world.add_component<Rotation_Component>(init_constr_rot_val2); 
     
-    // Convert the constrained body point position from body space to world space
-    Eigen::Rotation2D<float> transform_matr = Eigen::Rotation2D<float>((3.14159/180.0)*-45.0);
-    Eigen::Vector2f constr_body_pos = transform_matr * Eigen::Vector2f(-0.5, 0.0);
-    std::cout << "X: " << constr_body_pos.x() << "Y: " << constr_body_pos.y() << std::endl;
     
-     
+    // Initialize Systems after known established entites are created
+    Render_init(render_config);
+    Constraint_System_Init(my_world); 
+
     int i = 0;
     while (!w.ShouldClose()) // Detect window close button or ESC key
     //while (i < 1)

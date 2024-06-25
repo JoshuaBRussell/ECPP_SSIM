@@ -21,6 +21,7 @@
 const size_t ENTITY_DIM = 3;
 const float Kp_C = 25.0; 
 
+
 struct constr_info {
     int i; // constraint index;
     int j; // particle index
@@ -50,6 +51,22 @@ int add_id_if_unique(std::vector<int>* vec_ptr, int id){
 
 bool has_been_init = false;
 
+// Need to have some way to ascribe entity locations in the global matrices,
+// and keep up with them in case the entity is encountered again in another 
+// constraint
+// This just used the index
+static std::vector<int> constr_entities;
+static std::vector<constr_info> constrs_vec;
+static std::vector<float> constrs_eval;
+
+static Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> J; 
+static Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> J_dot;
+static Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> M;
+static Eigen::VectorXf q_dot;
+static Eigen::VectorXf Q;
+static Eigen::VectorXf C;
+
+
 void Constraint_System_Init(ECS_Manager &world){
     
     // Hack to make sure that all components this system "needs"
@@ -60,15 +77,16 @@ void Constraint_System_Init(ECS_Manager &world){
     
     has_been_init = true;
 
-}
+    J.resize(4, 6);//(constrs_eval.size(), ENTITY_DIM*constr_entities.size()); 
+    J_dot.resize(4,6);//(constrs_eval.size(), ENTITY_DIM*constr_entities.size());
 
-// Need to have some way to ascribe entity locations in the global matrices,
-// and keep up with them in case the entity is encountered again in another 
-// constraint
-// This just used the index
-static std::vector<int> constr_entities;
-static std::vector<constr_info> constrs_vec;
-static std::vector<float> constrs_eval;
+    M = Eigen::MatrixXf::Identity(ENTITY_DIM*2, ENTITY_DIM*2);//(ENTITY_DIM*constr_entities.size(), ENTITY_DIM*constr_entities.size()); 
+
+    q_dot.resize(ENTITY_DIM*2);//(ENTITY_DIM*constr_entities.size());
+    Q.resize(ENTITY_DIM*2);//(ENTITY_DIM*constr_entities.size());
+    C.resize(4,1);//(constrs_eval.size());
+
+}
 
 void Constraint_System(ECS_Manager &world){
     
@@ -272,13 +290,6 @@ void Constraint_System(ECS_Manager &world){
 
     // ---- Form Global Matrices/Vectors ---- //
    
-    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> J(constrs_eval.size(), ENTITY_DIM*constr_entities.size()); 
-    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> J_dot(constrs_eval.size(), ENTITY_DIM*constr_entities.size()); 
-    
-    J = Eigen::MatrixXf::Zero(constrs_eval.size(), ENTITY_DIM*constr_entities.size());
-    J_dot = Eigen::MatrixXf::Zero(constrs_eval.size(), ENTITY_DIM*constr_entities.size());
-
-    
     for (auto it = constrs_vec.begin(); it < constrs_vec.end();  it++){
 
         J(it->i  , it->j)   = it->J_sub_block[0][0]; 
@@ -298,14 +309,6 @@ void Constraint_System(ECS_Manager &world){
         J_dot(it->i+1, it->j+1) = it->J_dot_sub_block[1][1]; 
         J_dot(it->i+1, it->j+2) = it->J_dot_sub_block[1][2];
     }
-
-    
-    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> M;
-    M = Eigen::MatrixXf::Identity(ENTITY_DIM*constr_entities.size(), ENTITY_DIM*constr_entities.size());
-    
-    Eigen::VectorXf q_dot(ENTITY_DIM*constr_entities.size());
-    Eigen::VectorXf Q(ENTITY_DIM*constr_entities.size());
-    Eigen::VectorXf C(constrs_eval.size()); 
     
     for (auto it = constr_entities.begin(); it < constr_entities.end(); it++){
         int entity_offset = ENTITY_DIM*std::distance(constr_entities.begin(), it);
@@ -335,9 +338,9 @@ void Constraint_System(ECS_Manager &world){
        C(i) = constrs_eval[i];
        //std::cout << "C: \n" << C << "\n";
     }
-
+    
     // Solve Global Matrices
-    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> A = J*M.inverse()*J.transpose();
+    Eigen::Matrix<float, 4, 4> A = J*M.inverse()*J.transpose();
     Eigen::VectorXf b = -1.0*J_dot*q_dot - J*M.inverse()*Q - Kp_C*C;
     //std::cout << "A: " << A << std::endl;
     //std::cout << "J: " << J << std::endl;
