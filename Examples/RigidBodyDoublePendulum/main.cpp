@@ -188,6 +188,7 @@ int main() {
     my_world.add_component<Render_Component>(bg_render_comp);
     my_world.add_component<Rotation_Component>(bg_rot_comp); 
     
+    //for (int i = 0; i < 2; i++){
     // First Rigid Body
     entity_id++;
     int rb1_id = entity_id;
@@ -211,7 +212,7 @@ int main() {
     add_rel_constr(my_world, rel_constr_id, rb1_id, rb2_id,
                     Eigen::Vector2f(0.0, -1.0), Eigen::Vector2f(0.0, 1.0));
      
-    
+    //} 
     // Initialize Systems after known established entites are created
     Render_init(render_config);
     Constraint_System_Init(my_world); 
