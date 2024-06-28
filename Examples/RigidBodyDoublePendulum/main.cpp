@@ -188,31 +188,31 @@ int main() {
     my_world.add_component<Render_Component>(bg_render_comp);
     my_world.add_component<Rotation_Component>(bg_rot_comp); 
     
-    //for (int i = 0; i < 2; i++){
-    // First Rigid Body
-    entity_id++;
-    int rb1_id = entity_id;
-    add_rigid_body_to_world(my_world, rb1_id, Eigen::Vector2f(1.0, 0.0), 1.5707);
-    
-    // Second Rigid Body
-    entity_id++;
-    int rb2_id = entity_id; 
-    add_rigid_body_to_world(my_world, rb2_id, Eigen::Vector2f(2.0, -1.0), 0.0); 
-    
-    // Fixed Position Constraint
-    entity_id++;
-    int fixed_constr_id = entity_id;
-    add_fixed_pos_constr(my_world, 
-                         fixed_constr_id, rb1_id, 
-                         Eigen::Vector2f(0.0, 0.0), Eigen::Vector2f(0.0, 1.0)); 
-    
-    // Relative Position Constraint
-    entity_id++;
-    int rel_constr_id = entity_id;
-    add_rel_constr(my_world, rel_constr_id, rb1_id, rb2_id,
-                    Eigen::Vector2f(0.0, -1.0), Eigen::Vector2f(0.0, 1.0));
-     
-    //} 
+    for (int i = 0; i < 2; i++){
+        // First Rigid Body
+        entity_id++;
+        int rb1_id = entity_id;
+        add_rigid_body_to_world(my_world, rb1_id, Eigen::Vector2f(1.0, 0.0), 1.5707);
+        
+        // Second Rigid Body
+        entity_id++;
+        int rb2_id = entity_id; 
+        add_rigid_body_to_world(my_world, rb2_id, Eigen::Vector2f(2.0, -1.0), 0.0); 
+        
+        // Fixed Position Constraint
+        entity_id++;
+        int fixed_constr_id = entity_id;
+        add_fixed_pos_constr(my_world, 
+                             fixed_constr_id, rb1_id, 
+                             Eigen::Vector2f(0.0, 0.0), Eigen::Vector2f(0.0, 1.0)); 
+        
+        // Relative Position Constraint
+        entity_id++;
+        int rel_constr_id = entity_id;
+        add_rel_constr(my_world, rel_constr_id, rb1_id, rb2_id,
+                        Eigen::Vector2f(0.0, -1.0), Eigen::Vector2f(0.0, 1.0));
+         
+    } 
     // Initialize Systems after known established entites are created
     Render_init(render_config);
     Constraint_System_Init(my_world); 
