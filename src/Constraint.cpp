@@ -18,6 +18,7 @@
 #include "./components/Rotation_comp.hpp"
 #include "./components/Angular_Vel_comp.hpp"
 
+const size_t CONSTR_DIM = 2; // Subject to change at later date
 const size_t ENTITY_DIM = 3;
 const float Kp_C = 25.0; 
 
@@ -59,9 +60,11 @@ static std::vector<int> constr_entities;
 static std::vector<constr_info> constrs_vec;
 static std::vector<float> constrs_eval;
 
+static Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> A;
 static Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> J; 
 static Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> J_dot;
 static Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> M;
+
 static Eigen::VectorXf q_dot;
 static Eigen::VectorXf Q;
 static Eigen::VectorXf C;
@@ -76,24 +79,44 @@ void Constraint_System_Init(ECS_Manager &world){
     world.register_component<Relative_Rot_Component>(); 
     
     has_been_init = true;
+    
+    size_t constr_count = 0;
+    // Go through all the currently list constraints to find the number of entities
+    // involved.
+    for (auto it = world.get_component_begin<Fixed_Rot_Component>(); 
+              it < world.get_component_end<Fixed_Rot_Component>(); it++){
+        add_id_if_unique(&constr_entities, it->constr_entity);
+        constr_count +=1;
+    }
+    
+    for (auto it = world.get_component_begin<Relative_Rot_Component>(); 
+              it < world.get_component_end<Relative_Rot_Component>(); it++){
+        add_id_if_unique(&constr_entities, it->constr_entity1); 
+        add_id_if_unique(&constr_entities, it->constr_entity2); 
+        constr_count+=1; 
+    } 
+    
+    size_t entity_count = constr_entities.size();
+    
+    J.resize(CONSTR_DIM*constr_count,     ENTITY_DIM*entity_count);
+    J_dot.resize(CONSTR_DIM*constr_count, ENTITY_DIM*entity_count);
 
-    J.resize(4, 6);//(constrs_eval.size(), ENTITY_DIM*constr_entities.size()); 
-    J_dot.resize(4,6);//(constrs_eval.size(), ENTITY_DIM*constr_entities.size());
+    M = Eigen::MatrixXf::Identity(ENTITY_DIM*entity_count, ENTITY_DIM*entity_count);
 
-    M = Eigen::MatrixXf::Identity(ENTITY_DIM*2, ENTITY_DIM*2);//(ENTITY_DIM*constr_entities.size(), ENTITY_DIM*constr_entities.size()); 
-
-    q_dot.resize(ENTITY_DIM*2);//(ENTITY_DIM*constr_entities.size());
-    Q.resize(ENTITY_DIM*2);//(ENTITY_DIM*constr_entities.size());
-    C.resize(4,1);//(constrs_eval.size());
-
+    q_dot.resize(ENTITY_DIM*entity_count, 1);
+    Q.resize(ENTITY_DIM*entity_count, 1);
+    C.resize(CONSTR_DIM*constr_count, 1);
+    std::cout << "Constr Count: " << constr_count << std::endl;
+    std::cout << "Entity Count: " << constr_count << std::endl;
+    std::cout << "J rows: " << CONSTR_DIM*constr_count << std::endl;
+    std::cout << "J cols: " << ENTITY_DIM*entity_count << std::endl;
 }
 
 void Constraint_System(ECS_Manager &world){
     
     // Clear these at the beginning to be sure they are empty
     // Empties the results, but keeps the capacity unchanged,
-    // thereby reducing mallac calls under the hood
-    constr_entities.clear();
+    // thereby reducing malloc calls under the hood
     constrs_vec.clear();
     constrs_eval.clear();
 
@@ -108,9 +131,10 @@ void Constraint_System(ECS_Manager &world){
     for (auto it = world.get_component_begin<Fixed_Rot_Component>(); 
               it < world.get_component_end<Fixed_Rot_Component>(); it++){  
           
-        int constr_entity = it->constr_entity;
-        // Add Unique Item to List
-        int entity_offset = 3*add_id_if_unique(&constr_entities, constr_entity); 
+        // Find relative entity position 
+        auto loc_it = std::find(constr_entities.begin(), constr_entities.end(), it->constr_entity);
+        assert(loc_it != constr_entities.end()); // Either Init wasn't called OR Constraint_System was not notified of a new entity 
+        size_t entity_offset = ENTITY_DIM*std::distance(constr_entities.begin(), loc_it); 
         
         
         Position_Component* pos_comp_ptr = world.get_component<Position_Component>(it->constr_entity);
@@ -212,9 +236,12 @@ void Constraint_System(ECS_Manager &world){
                  
         
         // Constraint-Entity Pair #1
-        int constr_entity1 = it->constr_entity1;
-        // Add Unique Item to List
-        int entity_offset1 = 3*add_id_if_unique(&constr_entities, constr_entity1);
+        
+        // Find relative entity position 
+        auto loc_it = std::find(constr_entities.begin(), constr_entities.end(), it->constr_entity1);
+        assert(loc_it != constr_entities.end()); // Either Init wasn't called OR Constraint_System was not notified of a new entity
+        size_t entity_offset1 = ENTITY_DIM*std::distance(constr_entities.begin(), loc_it);
+        
         int constr_index = constrs_eval.size();   
         struct constr_info constr_info1;
         constr_info1.i = constr_index;
@@ -243,9 +270,9 @@ void Constraint_System(ECS_Manager &world){
         //std::cout << "Rel Rot Size#1: " << constrs_vec.size() << "\n"; 
 
         // Constraint-Entity Pair #2  
-        int constr_entity2 = it->constr_entity2;
-        // Add Unique Item to List
-        int entity_offset2 = 3*add_id_if_unique(&constr_entities, constr_entity2);
+        loc_it = std::find(constr_entities.begin(), constr_entities.end(), it->constr_entity2);
+        assert(loc_it != constr_entities.end()); // Either Init wasn't called OR Constraint_System was not notified of a new entity
+        size_t entity_offset2 = ENTITY_DIM*std::distance(constr_entities.begin(), loc_it);        
         
         struct constr_info constr_info2;
         constr_info2.i = constrs_eval.size();
@@ -274,8 +301,8 @@ void Constraint_System(ECS_Manager &world){
         //std::cout << "Rel Rot Size#2: " << constrs_vec.size() << "\n"; 
          
         // Evaluate and save the constaints
-        Position_Component* pos_comp_ptr1 = world.get_component<Position_Component>(constr_entity1); 
-        Position_Component* pos_comp_ptr2 = world.get_component<Position_Component>(constr_entity2); 
+        Position_Component* pos_comp_ptr1 = world.get_component<Position_Component>(it->constr_entity1); 
+        Position_Component* pos_comp_ptr2 = world.get_component<Position_Component>(it->constr_entity2); 
 
         float x1 = pos_comp_ptr1->position.x() + rx1*cos_theta1 - ry1*sin_theta1;  
         float x2 = pos_comp_ptr2->position.x() + rx2*cos_theta2 - ry2*sin_theta2;
@@ -283,6 +310,8 @@ void Constraint_System(ECS_Manager &world){
         float y1 = pos_comp_ptr1->position.y() + rx1*sin_theta1 + ry1*cos_theta1;  
         float y2 = pos_comp_ptr2->position.y() + rx2*sin_theta2 + ry2*cos_theta2; 
         
+        // Wait to add these values to the vectors so the size of the vector can indicate
+        // where the constraint index is
         constrs_eval.push_back(x1 - x2);
         constrs_eval.push_back(y1 - y2);
 
@@ -330,7 +359,7 @@ void Constraint_System(ECS_Manager &world){
         Q(entity_offset + 2) = torque_comp_ptr->torque;
 
     }
-
+     
     // Copy the collected evaluated constraint functions into
     // this vector to be used when solving for the constraint
     // forces  
@@ -339,8 +368,9 @@ void Constraint_System(ECS_Manager &world){
        //std::cout << "C: \n" << C << "\n";
     }
     
+    
     // Solve Global Matrices
-    Eigen::Matrix<float, 4, 4> A = J*M.inverse()*J.transpose();
+    A = J*M.inverse()*J.transpose();
     Eigen::VectorXf b = -1.0*J_dot*q_dot - J*M.inverse()*Q - Kp_C*C;
     //std::cout << "A: " << A << std::endl;
     //std::cout << "J: " << J << std::endl;
