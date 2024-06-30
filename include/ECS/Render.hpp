@@ -9,8 +9,8 @@ struct render_config{
     int screen_width_in_pixels;  
     int screen_height_in_pixels;
    
-    float screen_width_in_meters;
-    float screen_height_in_meters; 
+    double screen_width_in_meters;
+    double screen_height_in_meters; 
 };
 
 raylib::Vector2 Input_get_pos_from_mouse(raylib::Mouse &mouse_instance);

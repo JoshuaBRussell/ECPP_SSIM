@@ -6,6 +6,6 @@ struct Position_Component {
     
     int entity_id;
 
-    Eigen::Vector2f position; // {x, y}
+    Eigen::Vector2d position; // {x, y}
 
 };

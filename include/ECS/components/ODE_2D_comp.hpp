@@ -14,4 +14,4 @@ struct ODE_2D_Component {
     INT_METHOD integration_method;
 };
 
-Eigen::Vector2f ODE_Function(Eigen::Vector2f, Eigen::Vector2f);
+Eigen::Vector2d ODE_Function(Eigen::Vector2d, Eigen::Vector2d);

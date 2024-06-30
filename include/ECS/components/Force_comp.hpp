@@ -6,6 +6,6 @@ struct Force_Component {
 
     int entity_id;
 
-    Eigen::Vector2f force; // {x, y}
+    Eigen::Vector2d force; // {x, y}
 
 };

@@ -20,15 +20,15 @@
 
 const size_t CONSTR_DIM = 2; // Subject to change at later date
 const size_t ENTITY_DIM = 3;
-const float Kp_C = 25.0; 
+const double Kp_C = 25.0; 
 
 
 struct constr_info {
     int i; // constraint index;
     int j; // particle index
 
-    float J_sub_block[2][ENTITY_DIM] = {};
-    float J_dot_sub_block[2][ENTITY_DIM] = {};
+    double J_sub_block[2][ENTITY_DIM] = {};
+    double J_dot_sub_block[2][ENTITY_DIM] = {};
 };
 
 int add_id_if_unique(std::vector<int>* vec_ptr, int id){
@@ -58,16 +58,16 @@ bool has_been_init = false;
 // This just used the index
 static std::vector<int> constr_entities;
 static std::vector<constr_info> constrs_vec;
-static std::vector<float> constrs_eval;
+static std::vector<double> constrs_eval;
 
-static Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> A;
-static Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> J; 
-static Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> J_dot;
-static Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> M;
+static Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A;
+static Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> J; 
+static Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> J_dot;
+static Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> M;
 
-static Eigen::VectorXf q_dot;
-static Eigen::VectorXf Q;
-static Eigen::VectorXf C;
+static Eigen::VectorXd q_dot;
+static Eigen::VectorXd Q;
+static Eigen::VectorXd C;
 
 
 void Constraint_System_Init(ECS_Manager &world){
@@ -101,7 +101,7 @@ void Constraint_System_Init(ECS_Manager &world){
     J.resize(CONSTR_DIM*constr_count,     ENTITY_DIM*entity_count);
     J_dot.resize(CONSTR_DIM*constr_count, ENTITY_DIM*entity_count);
 
-    M = Eigen::MatrixXf::Identity(ENTITY_DIM*entity_count, ENTITY_DIM*entity_count);
+    M = Eigen::MatrixXd::Identity(ENTITY_DIM*entity_count, ENTITY_DIM*entity_count);
 
     q_dot.resize(ENTITY_DIM*entity_count, 1);
     Q.resize(ENTITY_DIM*entity_count, 1);
@@ -143,8 +143,8 @@ void Constraint_System(ECS_Manager &world){
         Angular_Vel_Component* ang_vel_comp_ptr = world.get_component<Angular_Vel_Component>(it->constr_entity);
         
         // Convert the constrained body point position from body space to world space
-        Eigen::Rotation2D<float> transform_matr = Eigen::Rotation2D<float>(rot_comp_ptr->angle);
-        Eigen::Vector2f constr_body_pos = pos_comp_ptr->position + transform_matr * it->rel_body_pos;   
+        Eigen::Rotation2D<double> transform_matr = Eigen::Rotation2D<double>(rot_comp_ptr->angle);
+        Eigen::Vector2d constr_body_pos = pos_comp_ptr->position + transform_matr * it->rel_body_pos;   
         
         //std::cout << "\nCoM Pos: \n";
         //std::cout << "X: " << pos_comp_ptr->position.x() << " Y: " << pos_comp_ptr->position.y();  
@@ -157,18 +157,18 @@ void Constraint_System(ECS_Manager &world){
         constr_info.i = constrs_eval.size();
         constr_info.j = entity_offset;
         
-        float sin_theta = std::sin(rot_comp_ptr->angle);
-        float cos_theta = std::cos(rot_comp_ptr->angle); 
+        double sin_theta = std::sin(rot_comp_ptr->angle);
+        double cos_theta = std::cos(rot_comp_ptr->angle); 
         
         // Temp vars so I can get this working for now
-        float x = pos_comp_ptr->position.x();
-        float y = pos_comp_ptr->position.y();
-        float x_dot = vel_comp_ptr->velocity.x();
-        float y_dot = vel_comp_ptr->velocity.y(); 
-        float rx = it->rel_body_pos.x(); 
-        float ry = it->rel_body_pos.y();
-        float theta = rot_comp_ptr->angle;
-        float theta_dot = ang_vel_comp_ptr->w;
+        double x = pos_comp_ptr->position.x();
+        double y = pos_comp_ptr->position.y();
+        double x_dot = vel_comp_ptr->velocity.x();
+        double y_dot = vel_comp_ptr->velocity.y(); 
+        double rx = it->rel_body_pos.x(); 
+        double ry = it->rel_body_pos.y();
+        double theta = rot_comp_ptr->angle;
+        double theta_dot = ang_vel_comp_ptr->w;
         
 
         constr_info.J_sub_block[0][0] = 1.0;
@@ -179,9 +179,9 @@ void Constraint_System(ECS_Manager &world){
         constr_info.J_sub_block[1][1] = 1.0;
         constr_info.J_sub_block[1][2] = rx*cos_theta - ry*sin_theta; 
         
-        Eigen::Vector2f r = transform_matr * it->rel_body_pos;
-        Eigen::Vector2f temp_vec = ang_vel_comp_ptr->w*Eigen::Vector2f(-r.y(), r.x());// Contribution to World Space Vel due to Rotation is a Cross Product
-        Eigen::Vector2f constr_body_vel = vel_comp_ptr->velocity + temp_vec; 
+        Eigen::Vector2d r = transform_matr * it->rel_body_pos;
+        Eigen::Vector2d temp_vec = ang_vel_comp_ptr->w*Eigen::Vector2d(-r.y(), r.x());// Contribution to World Space Vel due to Rotation is a Cross Product
+        Eigen::Vector2d constr_body_vel = vel_comp_ptr->velocity + temp_vec; 
 
         /*std::cout << "\n\nCoM Vel: \n";
         std::cout << "X: " << vel_comp_ptr->velocity.x() << " Y: " << vel_comp_ptr->velocity.y();  
@@ -214,24 +214,24 @@ void Constraint_System(ECS_Manager &world){
         Rotation_Component* rot_comp_ptr2 = world.get_component<Rotation_Component>(it->constr_entity2);
         Angular_Vel_Component* ang_vel_comp_ptr2 = world.get_component<Angular_Vel_Component>(it->constr_entity2);
     
-        float theta1 = rot_comp_ptr1->angle;
-        float theta2 = rot_comp_ptr2->angle;
+        double theta1 = rot_comp_ptr1->angle;
+        double theta2 = rot_comp_ptr2->angle;
 
-        float theta1_dot = ang_vel_comp_ptr1->w;
-        float theta2_dot = ang_vel_comp_ptr2->w;
+        double theta1_dot = ang_vel_comp_ptr1->w;
+        double theta2_dot = ang_vel_comp_ptr2->w;
         
         
-        float rx1 = it->rel_body_pos1.x(); 
-        float ry1 = it->rel_body_pos1.y();
+        double rx1 = it->rel_body_pos1.x(); 
+        double ry1 = it->rel_body_pos1.y();
  
-        float rx2 = it->rel_body_pos2.x(); 
-        float ry2 = it->rel_body_pos2.y(); 
+        double rx2 = it->rel_body_pos2.x(); 
+        double ry2 = it->rel_body_pos2.y(); 
 
-        float sin_theta1 = std::sin(theta1);
-        float cos_theta1 = std::cos(theta1); 
+        double sin_theta1 = std::sin(theta1);
+        double cos_theta1 = std::cos(theta1); 
 
-        float sin_theta2 = std::sin(theta2);
-        float cos_theta2 = std::cos(theta2);
+        double sin_theta2 = std::sin(theta2);
+        double cos_theta2 = std::cos(theta2);
 
                  
         
@@ -304,11 +304,11 @@ void Constraint_System(ECS_Manager &world){
         Position_Component* pos_comp_ptr1 = world.get_component<Position_Component>(it->constr_entity1); 
         Position_Component* pos_comp_ptr2 = world.get_component<Position_Component>(it->constr_entity2); 
 
-        float x1 = pos_comp_ptr1->position.x() + rx1*cos_theta1 - ry1*sin_theta1;  
-        float x2 = pos_comp_ptr2->position.x() + rx2*cos_theta2 - ry2*sin_theta2;
+        double x1 = pos_comp_ptr1->position.x() + rx1*cos_theta1 - ry1*sin_theta1;  
+        double x2 = pos_comp_ptr2->position.x() + rx2*cos_theta2 - ry2*sin_theta2;
         
-        float y1 = pos_comp_ptr1->position.y() + rx1*sin_theta1 + ry1*cos_theta1;  
-        float y2 = pos_comp_ptr2->position.y() + rx2*sin_theta2 + ry2*cos_theta2; 
+        double y1 = pos_comp_ptr1->position.y() + rx1*sin_theta1 + ry1*cos_theta1;  
+        double y2 = pos_comp_ptr2->position.y() + rx2*sin_theta2 + ry2*cos_theta2; 
         
         // Wait to add these values to the vectors so the size of the vector can indicate
         // where the constraint index is
@@ -371,7 +371,7 @@ void Constraint_System(ECS_Manager &world){
     
     // Solve Global Matrices
     A = J*M.inverse()*J.transpose();
-    Eigen::VectorXf b = -1.0*J_dot*q_dot - J*M.inverse()*Q - Kp_C*C;
+    Eigen::VectorXd b = -1.0*J_dot*q_dot - J*M.inverse()*Q - Kp_C*C;
     //std::cout << "A: " << A << std::endl;
     //std::cout << "J: " << J << std::endl;
     //std::cout << "M: " << M << std::endl;
@@ -382,10 +382,10 @@ void Constraint_System(ECS_Manager &world){
     //std::cout << "- J*M.inverse()*Q\n" << - J*M.inverse()*Q << "\n"; 
     //std::cout << "M.inverse()\n" << M.inverse() << "\n";
     //std::cout << "Q: \n" << Q << "\n";
-    Eigen::VectorXf x = A.fullPivHouseholderQr().solve(b);
+    Eigen::VectorXd x = A.fullPivHouseholderQr().solve(b);
     
     //\hat{Q}  = J^T\lambda
-    Eigen::VectorXf Q_hat = J.transpose()*x;    
+    Eigen::VectorXd Q_hat = J.transpose()*x;    
     //std::cout << "Q Hat: " << Q_hat << "\n";
     // Apply Constraint Forces
     for (auto it = constr_entities.begin(); it < constr_entities.end(); it++){

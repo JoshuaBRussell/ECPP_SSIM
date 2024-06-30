@@ -4,6 +4,6 @@ struct Rot_Inertia_Component {
     
     int entity_id;
 
-    float moment_of_inertia;
+    double moment_of_inertia;
 
 };

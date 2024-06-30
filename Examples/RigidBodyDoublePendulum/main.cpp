@@ -63,16 +63,16 @@
 
 #define WINDOW_NAME "Pendulum Visualization"
 
-void add_rigid_body_to_world(ECS_Manager &world, int entity_id, Eigen::Vector2f pos, float angle){
+void add_rigid_body_to_world(ECS_Manager &world, int entity_id, Eigen::Vector2d pos, double angle){
     
     Particle_Component particle_flag      = {entity_id};
     Position_Component particle_pos       = {entity_id, pos};
-    Velocity_Component particle_vel       = {entity_id, Eigen::Vector2f(0.0, 0.0)}; 
+    Velocity_Component particle_vel       = {entity_id, Eigen::Vector2d(0.0, 0.0)}; 
     Rotation_Component rot_val            = {entity_id, angle}; 
     Render_Component render_val           = {entity_id, "./misc/BlueSquare.png",
                                                   320, 320, 50, 200}; // x, y, h, w; 
     ODE_Component ode_val                 = {entity_id, INT_METHOD::RK4}; 
-    Force_Component force_val             = {entity_id, Eigen::Vector2f(0.0, 0.0)};
+    Force_Component force_val             = {entity_id, Eigen::Vector2d(0.0, 0.0)};
     Mass_Component mass_val               = {entity_id, 1.0}; 
     Gravity_Component grav_val            = {entity_id}; 
     Torque_Component torque_val           = {entity_id, 0.0}; 
@@ -96,7 +96,7 @@ void add_rigid_body_to_world(ECS_Manager &world, int entity_id, Eigen::Vector2f 
 
 void add_fixed_pos_constr(ECS_Manager &world, 
                           int entity_id, int rb_id, 
-                          Eigen::Vector2f world_pos, Eigen::Vector2f rel_pos){
+                          Eigen::Vector2d world_pos, Eigen::Vector2d rel_pos){
 
     Fixed_Rot_Component fixed_rot_constr = {entity_id, rb_id, 
                                             world_pos, // world space point 
@@ -118,7 +118,7 @@ void add_fixed_pos_constr(ECS_Manager &world,
 
 void add_rel_constr(ECS_Manager &world, 
                      int entity_id, int rb1_id, int rb2_id, 
-                     Eigen::Vector2f rel_pos1, Eigen::Vector2f rel_pos2){
+                     Eigen::Vector2d rel_pos1, Eigen::Vector2d rel_pos2){
   
     Relative_Rot_Component rel_rot_constr = {entity_id, rb1_id, rb2_id, 
                                             rel_pos1, // body space - rigid body 1 
@@ -126,7 +126,7 @@ void add_rel_constr(ECS_Manager &world,
                                             0.0}; 
     Render_Component init_constr_rend2      = {entity_id, "./misc/RedCirc.png",
                                               320, 320, 15, 15}; 
-    Position_Component init_constr_pos2     = {entity_id, Eigen::Vector2f(0.0,  -2.0)}; 
+    Position_Component init_constr_pos2     = {entity_id, Eigen::Vector2d(0.0,  -2.0)}; 
     Particle_Component init_particle_flag4  = {entity_id}; 
     Rotation_Component init_constr_rot_val2     = {entity_id, 1.5708};
 
@@ -192,25 +192,25 @@ int main() {
         // First Rigid Body
         entity_id++;
         int rb1_id = entity_id;
-        add_rigid_body_to_world(my_world, rb1_id, Eigen::Vector2f(1.0, 0.0), 1.5707);
+        add_rigid_body_to_world(my_world, rb1_id, Eigen::Vector2d(1.0, 0.0), 1.5707);
         
         // Second Rigid Body
         entity_id++;
         int rb2_id = entity_id; 
-        add_rigid_body_to_world(my_world, rb2_id, Eigen::Vector2f(2.0, -1.0), 0.0); 
+        add_rigid_body_to_world(my_world, rb2_id, Eigen::Vector2d(2.0, -1.0), 0.0); 
         
         // Fixed Position Constraint
         entity_id++;
         int fixed_constr_id = entity_id;
         add_fixed_pos_constr(my_world, 
                              fixed_constr_id, rb1_id, 
-                             Eigen::Vector2f(0.0, 0.0), Eigen::Vector2f(0.0, 1.0)); 
+                             Eigen::Vector2d(0.0, 0.0), Eigen::Vector2d(0.0, 1.0)); 
         
         // Relative Position Constraint
         entity_id++;
         int rel_constr_id = entity_id;
         add_rel_constr(my_world, rel_constr_id, rb1_id, rb2_id,
-                        Eigen::Vector2f(0.0, -1.0), Eigen::Vector2f(0.0, 1.0));
+                        Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0));
          
     } 
     // Initialize Systems after known established entites are created

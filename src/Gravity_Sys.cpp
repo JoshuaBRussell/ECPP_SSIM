@@ -16,9 +16,9 @@ void Gravity_System(ECS_Manager &world){
     for (auto it = world.get_component_begin<Gravity_Component>(); 
               it < world.get_component_end<Gravity_Component>(); it++){ 
         
-        float grav_force = GRAVITATIONAL_ACC * world.get_component<Mass_Component>(it->entity_id)->m;
+        double grav_force = GRAVITATIONAL_ACC * world.get_component<Mass_Component>(it->entity_id)->m;
 
-        world.get_component<Force_Component>(it->entity_id)->force += Eigen::Vector2f(0.0, grav_force);
+        world.get_component<Force_Component>(it->entity_id)->force += Eigen::Vector2d(0.0, grav_force);
     
     }
 }

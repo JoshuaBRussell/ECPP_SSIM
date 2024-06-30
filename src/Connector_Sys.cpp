@@ -21,9 +21,9 @@ void Connector_System(ECS_Manager &world){
     for (auto it = world.get_component_begin<Connector_Component>(); 
               it < world.get_component_end<Connector_Component>(); it++){
         
-        Eigen::Vector2f conn_body_pos = it->pos; // Location of Connector Relative to Body CoG 
-        Eigen::Vector2f conn_force = it->force;  // Force Applied at Connector Body 
-        float conn_torque = it->torque;  
+        Eigen::Vector2d conn_body_pos = it->pos; // Location of Connector Relative to Body CoG 
+        Eigen::Vector2d conn_force = it->force;  // Force Applied at Connector Body 
+        double conn_torque = it->torque;  
    
         int attached_entity = it->attached_entity; // The Entity ID of the entity this connector is 
                                                    // attached to
@@ -36,14 +36,14 @@ void Connector_System(ECS_Manager &world){
         force_comp_ptr->force += conn_force;
 
         // Transform force into body space from world space
-        Eigen::Rotation2D<float> transform_matr = Eigen::Rotation2D<float>((-3.14159/180.0)*rot_comp_ptr->angle);
+        Eigen::Rotation2D<double> transform_matr = Eigen::Rotation2D<double>((-3.14159/180.0)*rot_comp_ptr->angle);
         // Keeping this stale comment in b/c the fact that 'toRotatoinMatrix()' is needed is not 
         // intuitively obvious.
         // std::cout << transform_matr.toRotationMatrix() << std::endl;  
-        Eigen::Vector2f conn_force_body = transform_matr * conn_force; 
+        Eigen::Vector2d conn_force_body = transform_matr * conn_force; 
         
         // Positive Torque is CCW
-        float torque = -(conn_force_body.x() * conn_body_pos.y() - conn_force_body.y() * conn_body_pos.x()); 
+        double torque = -(conn_force_body.x() * conn_body_pos.y() - conn_force_body.y() * conn_body_pos.x()); 
         torque_comp_ptr->torque += torque;
     
     }
