@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 #include <Eigen/LU> // inverse()
 #include <Eigen/Dense>
+#include <Eigen/Sparse>
 
 #include "./components/Constraint_comp.hpp"
 #include "./components/Position_comp.hpp"
@@ -60,10 +61,11 @@ static std::vector<int> constr_entities;
 static std::vector<constr_info> constrs_vec;
 static std::vector<double> constrs_eval;
 
-static Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A;
-static Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> J; 
-static Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> J_dot;
-static Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> M;
+static Eigen::SparseMatrix<double> A;
+static Eigen::SparseMatrix<double> J; 
+static Eigen::SparseMatrix<double> J_dot;
+static Eigen::SparseMatrix<double> M;
+static Eigen::SparseMatrix<double> W;
 
 static Eigen::VectorXd q_dot;
 static Eigen::VectorXd Q;
@@ -98,14 +100,24 @@ void Constraint_System_Init(ECS_Manager &world){
     
     size_t entity_count = constr_entities.size();
     
-    J.resize(CONSTR_DIM*constr_count,     ENTITY_DIM*entity_count);
-    J_dot.resize(CONSTR_DIM*constr_count, ENTITY_DIM*entity_count);
+    // Set total size of matrices
+    J.resize(CONSTR_DIM*constr_count, ENTITY_DIM*entity_count);
+    J_dot.resize(CONSTR_DIM*constr_count, ENTITY_DIM*entity_count); 
+    // Reserve memory for non-zero elements 
+    
+    J.reserve(Eigen::VectorXd::Constant(ENTITY_DIM*entity_count, 4));
+    J_dot.reserve(Eigen::VectorXd::Constant(ENTITY_DIM*entity_count, 4));
 
-    M = Eigen::MatrixXd::Identity(ENTITY_DIM*entity_count, ENTITY_DIM*entity_count);
+    // Only happenstance in this particular example
+    M.resize(ENTITY_DIM*entity_count, ENTITY_DIM*entity_count);
+    W.resize(ENTITY_DIM*entity_count, ENTITY_DIM*entity_count);
+    M.setIdentity();
+    W.setIdentity();
 
     q_dot.resize(ENTITY_DIM*entity_count, 1);
     Q.resize(ENTITY_DIM*entity_count, 1);
     C.resize(CONSTR_DIM*constr_count, 1);
+    
     std::cout << "Constr Count: " << constr_count << std::endl;
     std::cout << "Entity Count: " << constr_count << std::endl;
     std::cout << "J rows: " << CONSTR_DIM*constr_count << std::endl;
@@ -317,26 +329,26 @@ void Constraint_System(ECS_Manager &world){
 
     }
 
-    // ---- Form Global Matrices/Vectors ---- //
-   
-    for (auto it = constrs_vec.begin(); it < constrs_vec.end();  it++){
-
-        J(it->i  , it->j)   = it->J_sub_block[0][0]; 
-        J(it->i  , it->j+1) = it->J_sub_block[0][1];
-        J(it->i  , it->j+2) = it->J_sub_block[0][2];
-        
-        J(it->i+1, it->j)   = it->J_sub_block[1][0]; 
-        J(it->i+1, it->j+1) = it->J_sub_block[1][1];
-        J(it->i+1, it->j+2) = it->J_sub_block[1][2]; 
-        
-        
-        J_dot(it->i  , it->j)   = it->J_dot_sub_block[0][0]; 
-        J_dot(it->i  , it->j+1) = it->J_dot_sub_block[0][1]; 
-        J_dot(it->i  , it->j+2) = it->J_dot_sub_block[0][2]; 
+    // ---- Insert Values into the Jacobian Matrices/Vectors ---- //
     
-        J_dot(it->i+1, it->j)   = it->J_dot_sub_block[1][0]; 
-        J_dot(it->i+1, it->j+1) = it->J_dot_sub_block[1][1]; 
-        J_dot(it->i+1, it->j+2) = it->J_dot_sub_block[1][2];
+    for (auto it = constrs_vec.begin(); it < constrs_vec.end();  it++){
+        
+        J.coeffRef(it->i  , it->j)   = it->J_sub_block[0][0]; 
+        J.coeffRef(it->i  , it->j+1) = it->J_sub_block[0][1];
+        J.coeffRef(it->i  , it->j+2) = it->J_sub_block[0][2];
+        
+        J.coeffRef(it->i+1, it->j)   = it->J_sub_block[1][0]; 
+        J.coeffRef(it->i+1, it->j+1) = it->J_sub_block[1][1];
+        J.coeffRef(it->i+1, it->j+2) = it->J_sub_block[1][2]; 
+        
+        
+        J_dot.coeffRef(it->i  , it->j)   = it->J_dot_sub_block[0][0]; 
+        J_dot.coeffRef(it->i  , it->j+1) = it->J_dot_sub_block[0][1]; 
+        J_dot.coeffRef(it->i  , it->j+2) = it->J_dot_sub_block[0][2]; 
+    
+        J_dot.coeffRef(it->i+1, it->j)   = it->J_dot_sub_block[1][0]; 
+        J_dot.coeffRef(it->i+1, it->j+1) = it->J_dot_sub_block[1][1]; 
+        J_dot.coeffRef(it->i+1, it->j+2) = it->J_dot_sub_block[1][2];
     }
     
     for (auto it = constr_entities.begin(); it < constr_entities.end(); it++){
@@ -370,8 +382,8 @@ void Constraint_System(ECS_Manager &world){
     
     
     // Solve Global Matrices
-    A = J*M.inverse()*J.transpose();
-    Eigen::VectorXd b = -1.0*J_dot*q_dot - J*M.inverse()*Q - Kp_C*C;
+    A = J*W*J.transpose();
+    Eigen::VectorXd b = -1.0*J_dot*q_dot - J*W*Q - Kp_C*C;
     //std::cout << "A: " << A << std::endl;
     //std::cout << "J: " << J << std::endl;
     //std::cout << "M: " << M << std::endl;
@@ -382,7 +394,12 @@ void Constraint_System(ECS_Manager &world){
     //std::cout << "- J*M.inverse()*Q\n" << - J*M.inverse()*Q << "\n"; 
     //std::cout << "M.inverse()\n" << M.inverse() << "\n";
     //std::cout << "Q: \n" << Q << "\n";
-    Eigen::VectorXd x = A.fullPivHouseholderQr().solve(b);
+    
+    // Solver Methods
+    Eigen::LeastSquaresConjugateGradient<Eigen::SparseMatrix<double> > lscg;   
+    lscg.compute(A);
+    Eigen::VectorXd x = lscg.solve(b);
+    //Eigen::VectorXd x = A.fullPivHouseholderQr().solve(b);
     
     //\hat{Q}  = J^T\lambda
     Eigen::VectorXd Q_hat = J.transpose()*x;    
