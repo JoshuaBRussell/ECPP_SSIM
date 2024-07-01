@@ -70,6 +70,7 @@ static Eigen::SparseMatrix<double> W;
 static Eigen::VectorXd q_dot;
 static Eigen::VectorXd Q;
 static Eigen::VectorXd C;
+static Eigen::VectorXd x;
 
 
 void Constraint_System_Init(ECS_Manager &world){
@@ -117,6 +118,9 @@ void Constraint_System_Init(ECS_Manager &world){
     q_dot.resize(ENTITY_DIM*entity_count, 1);
     Q.resize(ENTITY_DIM*entity_count, 1);
     C.resize(CONSTR_DIM*constr_count, 1);
+
+    x.resize(CONSTR_DIM*constr_count);
+    x.setZero();
     
     std::cout << "Constr Count: " << constr_count << std::endl;
     std::cout << "Entity Count: " << constr_count << std::endl;
@@ -398,8 +402,13 @@ void Constraint_System(ECS_Manager &world){
     // Solver Methods
     Eigen::LeastSquaresConjugateGradient<Eigen::SparseMatrix<double> > lscg;   
     lscg.compute(A);
-    Eigen::VectorXd x = lscg.solve(b);
-    //Eigen::VectorXd x = A.fullPivHouseholderQr().solve(b);
+    
+     
+    //x = lscg.solve(b); 
+    x = lscg.solveWithGuess(b, x); // Use the previous result as an initial starting point
+   
+    //Eigen::VectorXd x = A.fullPivHouseholderQr().solve(b); 
+    
     
     //\hat{Q}  = J^T\lambda
     Eigen::VectorXd Q_hat = J.transpose()*x;    
