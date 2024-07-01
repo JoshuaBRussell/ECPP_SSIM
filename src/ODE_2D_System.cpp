@@ -14,7 +14,7 @@ void ODE_System_2D_init(){
 
 }
 
-void ODE_System_2D(ECS_Manager &world, float dt){
+void ODE_System_2D(ECS_Manager &world, double dt){
 
     for (auto it = world.get_component_begin<ODE_2D_Component>(); 
               it < world.get_component_end<ODE_2D_Component>(); it++){ 
@@ -24,7 +24,7 @@ void ODE_System_2D(ECS_Manager &world, float dt){
         ODE_2D_Component* ode_comp_ptr = world.get_component<ODE_2D_Component>(it->entity_id);  
         INT_METHOD method = ode_comp_ptr->integration_method; 
 
-        Eigen::Vector2f input = Eigen::Vector2f();
+        Eigen::Vector2d input = Eigen::Vector2d();
 
         switch (method) {
             case INT_METHOD::EULER:{ 
@@ -37,10 +37,10 @@ void ODE_System_2D(ECS_Manager &world, float dt){
             case INT_METHOD::RK4: {
 
                 // Runge-Kutta | 4th Order
-                Eigen::Vector2f K1 = ODE_Function(pos_comp_ptr->position, input);
-                Eigen::Vector2f K2 = ODE_Function(pos_comp_ptr->position + (dt/2)*K1, input);
-                Eigen::Vector2f K3 = ODE_Function(pos_comp_ptr->position + (dt/2)*K2, input);
-                Eigen::Vector2f K4 = ODE_Function(pos_comp_ptr->position + (dt)*K3, input);
+                Eigen::Vector2d K1 = ODE_Function(pos_comp_ptr->position, input);
+                Eigen::Vector2d K2 = ODE_Function(pos_comp_ptr->position + (dt/2)*K1, input);
+                Eigen::Vector2d K3 = ODE_Function(pos_comp_ptr->position + (dt/2)*K2, input);
+                Eigen::Vector2d K4 = ODE_Function(pos_comp_ptr->position + (dt)*K3, input);
                 pos_comp_ptr->position += (dt/6)*(K1 + 2*K2 + 2*K3 + K4, input);        
                 break; 
                 }

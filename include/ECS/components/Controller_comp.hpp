@@ -9,5 +9,5 @@ struct Controller_Component {
     double K_Gain;
     double B_Gain;
 
-    Eigen::Vector2f input;
+    Eigen::Vector2d input;
 };

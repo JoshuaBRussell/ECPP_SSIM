@@ -4,6 +4,6 @@ struct Mass_Component {
     
     int entity_id;
 
-    float m;
+    double m;
 
 };

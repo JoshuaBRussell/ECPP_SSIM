@@ -6,12 +6,12 @@ struct Connector_Component {
 
     int entity_id;
 
-    Eigen::Vector2f pos; // {x, y} in body space
+    Eigen::Vector2d pos; // {x, y} in body space
                          // i.e. relative to body's Center of Mass
    
     // Force/Torque applied at connector location
-    Eigen::Vector2f force;
-    float torque;
+    Eigen::Vector2d force;
+    double torque;
 
     int attached_entity;
 

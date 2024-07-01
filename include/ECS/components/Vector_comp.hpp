@@ -6,6 +6,6 @@ struct Vector_Component {
     
     int entity_id;
 
-    Eigen::Vector2f vec;
+    Eigen::Vector2d vec;
 
 };

@@ -18,9 +18,9 @@
 // Newtonian ODE Function
 // state: {pos_x, vel_x, pos_y, vel_y, theta, theta_dot}
 // input: {acc_x, acc_y, theta_ddot}
-Eigen::Matrix<float, 6, 1> ODE_Function(Eigen::Matrix<float, 6, 1> state, Eigen::Vector3f input){
+Eigen::Matrix<double, 6, 1> ODE_Function(Eigen::Matrix<double, 6, 1> state, Eigen::Vector3d input){
     
-    Eigen::Matrix<float, 6, 1> state_dot; // The derivative of state
+    Eigen::Matrix<double, 6, 1> state_dot; // The derivative of state
     
     state_dot(0) = state.coeff(1);
     state_dot(1) = input.coeff(0); 
@@ -36,7 +36,7 @@ void Newtonian_System_init(){
 
 }
 
-void Newtonian_System(ECS_Manager &world, float dt){
+void Newtonian_System(ECS_Manager &world, double dt){
 
     for (auto it = world.get_component_begin<ODE_Component>(); 
               it < world.get_component_end<ODE_Component>(); it++){ 
@@ -57,19 +57,19 @@ void Newtonian_System(ECS_Manager &world, float dt){
         
         INT_METHOD method = ode_comp_ptr->integration_method;
 
-        Eigen::Vector2f pos_vec = pos_comp_ptr->position;
-        Eigen::Vector2f vel_vec = vel_comp_ptr->velocity;
-        float theta = rot_comp_ptr->angle;
-        float w = ang_vel_comp_ptr->w;
+        Eigen::Vector2d pos_vec = pos_comp_ptr->position;
+        Eigen::Vector2d vel_vec = vel_comp_ptr->velocity;
+        double theta = rot_comp_ptr->angle;
+        double w = ang_vel_comp_ptr->w;
         
-        Eigen::Vector2f lin_acc_net = force_comp_ptr->force / mass_comp_ptr->m;
-        float ang_acc_net = torque_comp_ptr->torque / rot_inertia_comp_ptr->moment_of_inertia;
+        Eigen::Vector2d lin_acc_net = force_comp_ptr->force / mass_comp_ptr->m;
+        double ang_acc_net = torque_comp_ptr->torque / rot_inertia_comp_ptr->moment_of_inertia;
 
         switch (method) {
             case INT_METHOD::EULER:{ 
                 
                 // Euler Method
-                Eigen::Matrix<float, 6, 1> state_vec;
+                Eigen::Matrix<double, 6, 1> state_vec;
                 state_vec(0) = pos_vec.coeff(0);
                 state_vec(1) = vel_vec.coeff(0); 
                 state_vec(2) = pos_vec.coeff(1); 
@@ -77,15 +77,15 @@ void Newtonian_System(ECS_Manager &world, float dt){
                 state_vec(4) = theta; 
                 state_vec(5) = w;
 
-                Eigen::Vector3f acc_net;
+                Eigen::Vector3d acc_net;
                 acc_net(0) = lin_acc_net(0);
                 acc_net(1) = lin_acc_net(1);
                 acc_net(2) = ang_acc_net;
                 
                 state_vec = state_vec + dt*ODE_Function(state_vec, acc_net);
                 
-                pos_comp_ptr->position = Eigen::Vector2f(state_vec[0], state_vec[2]);
-                vel_comp_ptr->velocity = Eigen::Vector2f(state_vec[1], state_vec[3]);
+                pos_comp_ptr->position = Eigen::Vector2d(state_vec[0], state_vec[2]);
+                vel_comp_ptr->velocity = Eigen::Vector2d(state_vec[1], state_vec[3]);
                 rot_comp_ptr->angle    = state_vec[4];
                 ang_vel_comp_ptr->w    = state_vec[5];
 
@@ -95,7 +95,7 @@ void Newtonian_System(ECS_Manager &world, float dt){
             case INT_METHOD::RK4: {
 
                 // Runge-Kutta | 4th Order
-                Eigen::Matrix<float, 6, 1> state_vec;
+                Eigen::Matrix<double, 6, 1> state_vec;
                 state_vec(0) = pos_vec.coeff(0);
                 state_vec(1) = vel_vec.coeff(0); 
                 state_vec(2) = pos_vec.coeff(1); 
@@ -103,20 +103,20 @@ void Newtonian_System(ECS_Manager &world, float dt){
                 state_vec(4) = theta; 
                 state_vec(5) = w;
 
-                Eigen::Vector3f acc_net;
+                Eigen::Vector3d acc_net;
                 acc_net(0) = lin_acc_net(0);
                 acc_net(1) = lin_acc_net(1);
                 acc_net(2) = ang_acc_net;
                 
-                Eigen::Matrix<float, 6, 1> K1 = ODE_Function(state_vec            , acc_net);
-                Eigen::Matrix<float, 6, 1> K2 = ODE_Function(state_vec + (dt/2)*K1, acc_net);
-                Eigen::Matrix<float, 6, 1> K3 = ODE_Function(state_vec + (dt/2)*K2, acc_net);
-                Eigen::Matrix<float, 6, 1> K4 = ODE_Function(state_vec + (dt)*K3  , acc_net);
+                Eigen::Matrix<double, 6, 1> K1 = ODE_Function(state_vec            , acc_net);
+                Eigen::Matrix<double, 6, 1> K2 = ODE_Function(state_vec + (dt/2)*K1, acc_net);
+                Eigen::Matrix<double, 6, 1> K3 = ODE_Function(state_vec + (dt/2)*K2, acc_net);
+                Eigen::Matrix<double, 6, 1> K4 = ODE_Function(state_vec + (dt)*K3  , acc_net);
                 
                 state_vec = state_vec + (dt/6)*(K1 + 2*K2 + 2*K3 + K4);
 
-                pos_comp_ptr->position = Eigen::Vector2f(state_vec[0], state_vec[2]);
-                vel_comp_ptr->velocity = Eigen::Vector2f(state_vec[1], state_vec[3]);
+                pos_comp_ptr->position = Eigen::Vector2d(state_vec[0], state_vec[2]);
+                vel_comp_ptr->velocity = Eigen::Vector2d(state_vec[1], state_vec[3]);
                 rot_comp_ptr->angle    = state_vec[4];
                 ang_vel_comp_ptr->w    = state_vec[5]; 
                 
@@ -126,7 +126,7 @@ void Newtonian_System(ECS_Manager &world, float dt){
             default: {
                 
                 // Euler Method
-                Eigen::Matrix<float, 6, 1> state_vec;
+                Eigen::Matrix<double, 6, 1> state_vec;
                 state_vec(0) = pos_vec.coeff(0);
                 state_vec(1) = vel_vec.coeff(0); 
                 state_vec(2) = pos_vec.coeff(1); 
@@ -134,22 +134,22 @@ void Newtonian_System(ECS_Manager &world, float dt){
                 state_vec(4) = theta; 
                 state_vec(5) = w;
 
-                Eigen::Vector3f acc_net;
+                Eigen::Vector3d acc_net;
                 acc_net(0) = lin_acc_net(0);
                 acc_net(1) = lin_acc_net(1);
                 acc_net(2) = ang_acc_net;
                 
                 state_vec = state_vec + dt*ODE_Function(state_vec, acc_net);
                 
-                pos_comp_ptr->position = Eigen::Vector2f(state_vec[0], state_vec[2]);
-                vel_comp_ptr->velocity = Eigen::Vector2f(state_vec[1], state_vec[3]);
+                pos_comp_ptr->position = Eigen::Vector2d(state_vec[0], state_vec[2]);
+                vel_comp_ptr->velocity = Eigen::Vector2d(state_vec[1], state_vec[3]);
                 rot_comp_ptr->angle    = state_vec[4];
                 ang_vel_comp_ptr->w    = state_vec[5];
                 break;
                 }
         }
 
-        force_comp_ptr->force = Eigen::Vector2f(0.0, 0.0);
+        force_comp_ptr->force = Eigen::Vector2d(0.0, 0.0);
         torque_comp_ptr->torque = 0.0; 
     }
 }
