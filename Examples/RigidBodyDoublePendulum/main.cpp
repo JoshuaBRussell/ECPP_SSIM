@@ -29,7 +29,7 @@
 #include "Collision.hpp"
 #include "FlowFieldVisual.hpp"
 #include "ParticleVisual.hpp"
-#include "Constraint.hpp"
+#include "ConstraintVisual.hpp"
 #include "Constraint.hpp"
 
 #include "./ECS/components/Rotation_comp.hpp"
@@ -118,7 +118,7 @@ void add_fixed_pos_constr(ECS_Manager &world,
 
 void add_rel_constr(ECS_Manager &world, 
                      int entity_id, int rb1_id, int rb2_id, 
-                     Eigen::Vector2d rel_pos1, Eigen::Vector2d rel_pos2){
+                     Eigen::Vector2d rel_pos1, Eigen::Vector2d rel_pos2, Eigen::Vector2d init_pos){
   
     Relative_Rot_Component rel_rot_constr = {entity_id, rb1_id, rb2_id, 
                                             rel_pos1, // body space - rigid body 1 
@@ -126,7 +126,7 @@ void add_rel_constr(ECS_Manager &world,
                                             0.0}; 
     Render_Component init_constr_rend2      = {entity_id, "./misc/blue_circle.png",
                                               320, 320, 15, 15}; 
-    Position_Component init_constr_pos2     = {entity_id, Eigen::Vector2d(0.0,  -2.0)}; 
+    Position_Component init_constr_pos2     = {entity_id, init_pos}; 
     Particle_Component init_particle_flag4  = {entity_id}; 
     Rotation_Component init_constr_rot_val2     = {entity_id, 1.5708};
 
@@ -210,7 +210,7 @@ int main() {
         entity_id++;
         int rel_constr_id = entity_id;
         add_rel_constr(my_world, rel_constr_id, rb1_id, rb2_id,
-                        Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0));
+                        Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, 1.0));
          
     } 
     // Initialize Systems after known established entites are created
@@ -228,8 +228,10 @@ int main() {
             Constraint_System(my_world);
             Newtonian_System(my_world, GetFrameTime()/100);
             
-       }
-        
+        }
+        // Move the Constraint World Coord. so it can be seen
+        Constraint_Visualization_System(my_world);
+
         // Converts Physical Coordinates to something the Render_System can use (Screen Coords)
         Particle_Visualization_System(my_world);
 
