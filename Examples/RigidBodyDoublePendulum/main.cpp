@@ -69,7 +69,7 @@ void add_rigid_body_to_world(ECS_Manager &world, int entity_id, Eigen::Vector2d 
     Position_Component particle_pos       = {entity_id, pos};
     Velocity_Component particle_vel       = {entity_id, Eigen::Vector2d(0.0, 0.0)}; 
     Rotation_Component rot_val            = {entity_id, angle}; 
-    Render_Component render_val           = {entity_id, "./misc/BlueSquare.png",
+    Render_Component render_val           = {entity_id, "./misc/black_square.png",
                                                   320, 320, 50, 200}; // x, y, h, w; 
     ODE_Component ode_val                 = {entity_id, INT_METHOD::RK4}; 
     Force_Component force_val             = {entity_id, Eigen::Vector2d(0.0, 0.0)};
@@ -102,7 +102,7 @@ void add_fixed_pos_constr(ECS_Manager &world,
                                             world_pos, // world space point 
                                             rel_pos,  // body space  
                                             0.0}; 
-    Render_Component init_constr_rend       = {entity_id, "./misc/RedCirc.png",
+    Render_Component init_constr_rend       = {entity_id, "./misc/blue_circle.png",
                                               320, 320, 15, 15}; 
     Position_Component init_constr_pos      = {entity_id, world_pos}; 
     Particle_Component init_particle_flag   = {entity_id}; 
@@ -124,7 +124,7 @@ void add_rel_constr(ECS_Manager &world,
                                             rel_pos1, // body space - rigid body 1 
                                             rel_pos2, // body space - rigid body 2 
                                             0.0}; 
-    Render_Component init_constr_rend2      = {entity_id, "./misc/RedCirc.png",
+    Render_Component init_constr_rend2      = {entity_id, "./misc/blue_circle.png",
                                               320, 320, 15, 15}; 
     Position_Component init_constr_pos2     = {entity_id, Eigen::Vector2d(0.0,  -2.0)}; 
     Particle_Component init_particle_flag4  = {entity_id}; 
@@ -182,7 +182,7 @@ int main() {
     int entity_id = 1;
     // Create the Background
     int bg_id = entity_id;
-    Render_Component bg_render_comp      =  {bg_id, "./misc/Background_Grid.png",
+    Render_Component bg_render_comp      =  {bg_id, "./misc/background_w_grid.png",
                                               320, 320, 640, 640}; // x, y, h, w;
     Rotation_Component bg_rot_comp       = {bg_id, 0.0}; 
     my_world.add_component<Render_Component>(bg_render_comp);
