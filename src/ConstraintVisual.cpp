@@ -10,6 +10,20 @@
 #include "./components/Constraint_comp.hpp"
 #include "./components/Rotation_comp.hpp"
 
+static size_t screen_width_in_pixels;
+static size_t screen_height_in_pixels;
+static double screen_width_in_meters;
+static double screen_height_in_meters;
+
+
+void Constraint_Visualization_Init(struct constr_visual_config &constr_visual_config){
+
+    screen_width_in_pixels  = constr_visual_config.screen_width_in_pixels ;
+    screen_height_in_pixels = constr_visual_config.screen_height_in_pixels;
+    screen_width_in_meters  = constr_visual_config.screen_width_in_meters ;
+    screen_height_in_meters = constr_visual_config.screen_height_in_meters;
+}
+
 void Constraint_Visualization_System(ECS_Manager &world){
     
     for (auto it = world.get_component_begin<Relative_Rot_Component>(); 

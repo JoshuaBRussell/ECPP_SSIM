@@ -70,7 +70,8 @@ void add_rigid_body_to_world(ECS_Manager &world, int entity_id, Eigen::Vector2d 
     Velocity_Component particle_vel       = {entity_id, Eigen::Vector2d(0.0, 0.0)}; 
     Rotation_Component rot_val            = {entity_id, angle}; 
     Render_Component render_val           = {entity_id, "./misc/black_square.png",
-                                                  320, 320, 50, 200}; // x, y, h, w; 
+                                                        SCREEN_WIDTH_IN_PIXELS/2, SCREEN_HEIGHT_IN_PIXELS/2, 
+                                                        50, 200}; // x, y, h, w; 
     ODE_Component ode_val                 = {entity_id, INT_METHOD::RK4}; 
     Force_Component force_val             = {entity_id, Eigen::Vector2d(0.0, 0.0)};
     Mass_Component mass_val               = {entity_id, 1.0}; 
@@ -103,7 +104,8 @@ void add_fixed_pos_constr(ECS_Manager &world,
                                             rel_pos,  // body space  
                                             0.0}; 
     Render_Component init_constr_rend       = {entity_id, "./misc/blue_circle.png",
-                                              320, 320, 15, 15}; 
+                                                          SCREEN_WIDTH_IN_PIXELS/2, SCREEN_HEIGHT_IN_PIXELS/2, 
+                                                          15, 15}; 
     Position_Component init_constr_pos      = {entity_id, world_pos}; 
     Particle_Component init_particle_flag   = {entity_id}; 
     Rotation_Component init_constr_rot_val  = {entity_id, 1.5708};
@@ -125,7 +127,8 @@ void add_rel_constr(ECS_Manager &world,
                                             rel_pos2, // body space - rigid body 2 
                                             0.0}; 
     Render_Component init_constr_rend2      = {entity_id, "./misc/blue_circle.png",
-                                              320, 320, 15, 15}; 
+                                              SCREEN_WIDTH_IN_PIXELS/2, SCREEN_HEIGHT_IN_PIXELS/2, 
+                                              15, 15}; 
     Position_Component init_constr_pos2     = {entity_id, init_pos}; 
     Particle_Component init_particle_flag4  = {entity_id}; 
     Rotation_Component init_constr_rot_val2     = {entity_id, 1.5708};
@@ -150,13 +153,18 @@ int main() {
     ECS_Manager my_world;
 
     // ---- Init Systems ---- //
-    struct render_config render_config = {
+    struct constr_visual_config constr_visual_config1 = {
         .screen_width_in_pixels  = SCREEN_WIDTH_IN_PIXELS,
         .screen_height_in_pixels = SCREEN_HEIGHT_IN_PIXELS,
         .screen_width_in_meters  = SCREEN_WIDTH_METERS,
         .screen_height_in_meters = SCREEN_HEIGHT_METERS
     };
-    
+    struct particle_visual_config particle_visual_config1 = {
+        .screen_width_in_pixels  = SCREEN_WIDTH_IN_PIXELS,
+        .screen_height_in_pixels = SCREEN_HEIGHT_IN_PIXELS,
+        .screen_width_in_meters  = SCREEN_WIDTH_METERS,
+        .screen_height_in_meters = SCREEN_HEIGHT_METERS
+    };
      
     
     my_world.register_component<Render_Component>();
@@ -183,7 +191,8 @@ int main() {
     // Create the Background
     int bg_id = entity_id;
     Render_Component bg_render_comp      =  {bg_id, "./misc/background_w_grid.png",
-                                              320, 320, 640, 640}; // x, y, h, w;
+                                              SCREEN_WIDTH_IN_PIXELS/2, SCREEN_HEIGHT_IN_PIXELS/2, 
+                                              SCREEN_HEIGHT_IN_PIXELS , SCREEN_WIDTH_IN_PIXELS}; // x, y, h, w;
     Rotation_Component bg_rot_comp       = {bg_id, 0.0}; 
     my_world.add_component<Render_Component>(bg_render_comp);
     my_world.add_component<Rotation_Component>(bg_rot_comp); 
@@ -214,7 +223,8 @@ int main() {
          
     } 
     // Initialize Systems after known established entites are created
-    Render_init(render_config);
+    Constraint_Visualization_Init(constr_visual_config1);
+    Particle_Visualization_Init(particle_visual_config1);
     Constraint_System_Init(my_world); 
 
     int i = 0;
