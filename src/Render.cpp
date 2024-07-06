@@ -19,14 +19,6 @@
 
 static std::map<std::string, raylib::Texture2D*> texture_repo;
 
-static int screen_width_in_pixels;
-static int screen_height_in_pixels;
-
-static double screen_width_in_meters;
-static double screen_height_in_meters;
-
-
-
 raylib::Vector2 Input_get_pos_from_mouse(raylib::Mouse &mouse_instance){
     double mouse_x = mouse_instance.GetPosition().x;
     double mouse_y = mouse_instance.GetPosition().y;
@@ -38,16 +30,6 @@ bool Input_is_button_pressed(raylib::Mouse &mouse_instance, int button){
     return mouse_instance.IsButtonReleased(button);
 }
 
-// ---- ---- //
-void Render_init(struct render_config &render_config){
-
-    screen_width_in_pixels  = render_config.screen_width_in_pixels;
-    screen_height_in_pixels = render_config.screen_height_in_pixels;
-    screen_width_in_meters  = render_config.screen_width_in_meters;
-    screen_height_in_meters = render_config.screen_height_in_meters;
-    
-    
-}
 /*
 void Render_System_Exclusive(ECS_Manager &world){
    
