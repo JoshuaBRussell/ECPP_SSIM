@@ -15,7 +15,8 @@ target := $(buildDir)/$(executable)
 sources := $(call rwildcard,src/,*.cpp)
 objects := $(patsubst src/%, $(buildDir)/%, $(patsubst %.cpp, %.o, $(sources)))
 depends := $(patsubst %.o, %.d, $(objects))
-compileFlags := -std=c++17 -I include -I ./include/ECS -I ./include/ECS/components -I /usr/include/eigen3/ -O1 -Wall
+include_dirs := -I include -I ./include/ECS -I ./include/ECS/components -I /usr/include/eigen3/ -I ./vendor/raylib/src -I ./vendor/raylib-cpp/include
+compileFlags := -std=c++17  $(include_dirs) -O1 -Wall
 linkFlags = -L lib/$(platform) -l raylib
 
 # Check for Windows
@@ -63,18 +64,11 @@ endif
 all: $(target) execute #clean
 
 # Sets up the project for compiling, generates includes and libs
-setup: include lib
+setup: lib
 
 # Pull and update the the build submodules
 submodules:
 	git submodule update --init --recursive
-
-# Copy the relevant header files into includes
-include: submodules
-	$(MKDIR) $(call platformpth, ./include)
-	$(call COPY,vendor/raylib/src,./include,raylib.h)
-	$(call COPY,vendor/raylib/src,./include,raymath.h)
-	$(call COPY,vendor/raylib-cpp/include,./include,*.hpp)
 
 # Build the raylib static library file and copy it into lib
 lib: submodules
