@@ -10,6 +10,8 @@
 #include "Render.hpp"
 #include "MemoryPool.hpp"
 
+#include "raylib-cpp.hpp"
+
 struct DataNode {
     int ID;
 
