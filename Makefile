@@ -13,11 +13,18 @@ buildDir := bin
 executable := app
 target := $(buildDir)/$(executable)
 sources := $(call rwildcard,src/,*.cpp)
+source += $(call rwildcard,vendor/imgui/,*.cpp)
 objects := $(patsubst src/%, $(buildDir)/%, $(patsubst %.cpp, %.o, $(sources)))
 depends := $(patsubst %.o, %.d, $(objects))
-include_dirs := -I include -I ./include/ECS -I ./include/ECS/components -I /usr/include/eigen3/ -I ./vendor/raylib/src -I ./vendor/raylib-cpp/include
+include_dirs := -I include -I ./include/ECS -I ./include/ECS/components -I /usr/include/eigen3/ -I ./vendor/raylib/src -I ./vendor/raylib-cpp/include -I ./vendor/rlImGui/ -I ./vendor/imgui/
 compileFlags := -std=c++17  $(include_dirs) -O1 -Wall
-linkFlags = -L lib/$(platform) -l raylib
+linkFlags = -L lib/$(platform) -l raylib -l rlImGui
+
+
+imgui_dir := ./vendor/imgui
+imgui_build_dir := $(buildDir)/imgui
+imgui_sources := $(imgui_dir)/imgui.cpp $(imgui_dir)/imgui_demo.cpp $(imgui_dir)/imgui_draw.cpp $(imgui_dir)/imgui_tables.cpp $(imgui_dir)/imgui_widgets.cpp 
+imgui_objects := $(patsubst $(imgui_dir)/%, $(imgui_build_dir)/%, $(patsubst %.cpp, %.o, $(imgui_sources)))
 
 # Check for Windows
 ifeq ($(OS), Windows_NT)
@@ -73,6 +80,17 @@ submodules:
 # Build the raylib static library file and copy it into lib
 lib: submodules
 	cd vendor/raylib/src $(THEN) "$(MAKE)" PLATFORM=PLATFORM_DESKTOP
+	$(MKDIR) $(call platformpth, lib/$(platform))
+	$(call COPY,vendor/raylib/$(libGenDir),lib/$(platform),libraylib.a)
+
+bin/imgui/%.o: $(imgui_dir)/%.cpp
+	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)	
+
+libimgui: $(imgui_objects)
+	$(info $(imgui_objects))
+
+librl: submodules
+	cd vendor/rlImGui $(THEN) "$(MAKE)" PLATFORM=PLATFORM_DESKTOP
 	$(MKDIR) $(call platformpth, lib/$(platform))
 	$(call COPY,vendor/raylib/$(libGenDir),lib/$(platform),libraylib.a)
 
@@ -156,7 +174,7 @@ body_point_main.o:
 
 # Link the program and create the executable
 rigid_double_pend: $(objects) rigid_double_pend_main.o
-	$(CXX) $(objects) bin/rigid_double_pend_main.o -o $(target) $(linkFlags)
+	$(CXX) $(objects) $(imgui_objects) bin/rigid_double_pend_main.o -o $(target) $(linkFlags)
 
 rigid_double_pend_main.o:
 	$(CXX) -c $(compileFlags) Examples/RigidBodyDoublePendulum/main.cpp -o bin/rigid_double_pend_main.o
