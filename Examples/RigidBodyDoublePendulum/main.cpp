@@ -6,10 +6,12 @@
 #include <array>
 #include <set>
 #include <string>
-
 #include <math.h>
 #include <cmath>
-#include <raylib-cpp.hpp>
+
+#include "raylib-cpp.hpp"
+#include "imgui.h"
+#include "rlImGui.h"
 
 #include <Eigen/Dense>
 
@@ -226,6 +228,8 @@ int main() {
     Constraint_Visualization_Init(constr_visual_config1);
     Particle_Visualization_Init(particle_visual_config1);
     Constraint_System_Init(my_world); 
+    
+    rlImGuiSetup(true);
 
     int i = 0;
     while (!w.ShouldClose()) // Detect window close button or ESC key
@@ -248,9 +252,17 @@ int main() {
         BeginDrawing();
         ClearBackground(BLACK);
         Render_System(my_world);
+
+        rlImGuiBegin();
+        bool open = true;
+        ImGui::ShowDemoWindow(&open); 
+        rlImGuiEnd();
+
         EndDrawing();
         //} 
     }
+
+    rlImGuiShutdown();
  
     return 0;
 }
