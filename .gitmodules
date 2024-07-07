@@ -1,0 +1,6 @@
+[submodule "vendor/raylib"]
+	path = vendor/raylib
+	url = git@github.com:raysan5/raylib.git
+[submodule "vendor/raylib-cpp"]
+	path = vendor/raylib-cpp
+	url = git@github.com:RobLoach/raylib-cpp.git

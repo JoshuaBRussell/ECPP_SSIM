@@ -4,6 +4,7 @@
 #include <iostream>
 #include <map>
 
+#include "AudioDevice.hpp"
 #include "ECS.hpp"
 #include "ECSManager.hpp"
 
@@ -18,17 +19,6 @@
 #include "raylib.h"
 
 static std::map<std::string, raylib::Texture2D*> texture_repo;
-
-raylib::Vector2 Input_get_pos_from_mouse(raylib::Mouse &mouse_instance){
-    double mouse_x = mouse_instance.GetPosition().x;
-    double mouse_y = mouse_instance.GetPosition().y;
-    
-    return raylib::Vector2(mouse_x, mouse_y);
-}
-
-bool Input_is_button_pressed(raylib::Mouse &mouse_instance, int button){
-    return mouse_instance.IsButtonReleased(button);
-}
 
 /*
 void Render_System_Exclusive(ECS_Manager &world){
