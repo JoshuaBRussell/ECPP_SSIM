@@ -4,3 +4,6 @@
 [submodule "vendor/raylib-cpp"]
 	path = vendor/raylib-cpp
 	url = git@github.com:RobLoach/raylib-cpp.git
+[submodule "vendor/imgui"]
+	path = vendor/imgui
+	url = git@github.com:ocornut/imgui.git
