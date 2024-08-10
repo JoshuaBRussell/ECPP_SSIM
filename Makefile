@@ -12,19 +12,30 @@ platformpth = $(subst /,$(PATHSEP),$1)
 buildDir := bin
 executable := app
 target := $(buildDir)/$(executable)
+
+# ECPPS_SIM Sources
 sources := $(call rwildcard,src/,*.cpp)
-source += $(call rwildcard,vendor/imgui/,*.cpp)
+source += $(call rwildcard,vendor/imgui/,*.cpp) #TODO: Why is this here?
 objects := $(patsubst src/%, $(buildDir)/%, $(patsubst %.cpp, %.o, $(sources)))
 depends := $(patsubst %.o, %.d, $(objects))
+
 include_dirs := -I include -I ./include/ECS -I ./include/ECS/components -I /usr/include/eigen3/ -I ./vendor/raylib/src -I ./vendor/raylib-cpp/include -I ./vendor/rlImGui/ -I ./vendor/imgui/
 compileFlags := -std=c++17  $(include_dirs) -O1 -Wall
-linkFlags = -L lib/$(platform) -l raylib -l rlImGui
+linkFlags = -L lib/$(platform) -l raylib -l imgui_rl_backend 
 
-
+# ImGui Itself
 imgui_dir := ./vendor/imgui
 imgui_build_dir := $(buildDir)/imgui
 imgui_sources := $(imgui_dir)/imgui.cpp $(imgui_dir)/imgui_demo.cpp $(imgui_dir)/imgui_draw.cpp $(imgui_dir)/imgui_tables.cpp $(imgui_dir)/imgui_widgets.cpp 
 imgui_objects := $(patsubst $(imgui_dir)/%, $(imgui_build_dir)/%, $(patsubst %.cpp, %.o, $(imgui_sources)))
+depends += $(patsubst %.o, %.d, $(imgui_objects))
+
+# ImGui Backend - Currently raylib
+rlImGui_dir := ./vendor/rlImGui
+rlImGui_build_dir := $(buildDir)/rlImGui
+rlImGui_sources := $(rlImGui_dir)/rlImGui.cpp 
+rlImGui_objects := $(patsubst $(rlImGui_dir)/%, $(rlImGui_build_dir)/%, $(patsubst %.cpp, %.o, $(rlImGui_sources)))
+depends += $(patsubst %.o, %.d, $(rlImGui_objects))
 
 # Check for Windows
 ifeq ($(OS), Windows_NT)
@@ -84,10 +95,25 @@ lib: submodules
 	$(call COPY,vendor/raylib/$(libGenDir),lib/$(platform),libraylib.a)
 
 bin/imgui/%.o: $(imgui_dir)/%.cpp
+	$(MKDIR) $(call platformpth, $(@D))	
+	$(info $@)	
 	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)	
 
-libimgui: $(imgui_objects)
+imgui: $(imgui_objects) imgui_backend
 	$(info $(imgui_objects))
+
+# Uses raylib as the backend
+imgui_backend: $(rlImGui_objects)
+	$(info $@)	
+
+bin/rlImGui/%.o: $(rlImGui_dir)/%.cpp
+	$(MKDIR) $(call platformpth, $(@D))	
+	$(info $@)	
+	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)
+
+
+libimgui_rl_backend: imgui imgui_backend
+	ar rcs lib/$(platform)/libimgui_rl_backend.a $(imgui_objects) $(rlImGui_objects)
 
 librl: submodules
 	cd vendor/rlImGui $(THEN) "$(MAKE)" PLATFORM=PLATFORM_DESKTOP
@@ -100,7 +126,7 @@ librl: submodules
 # Compile objects to the build directory
 $(buildDir)/%.o: src/%.cpp Makefile
 	$(MKDIR) $(call platformpth, $(@D))
-	$(info This works) 
+	$(info $(@D)) 
 	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)
 
 # Run the executable
@@ -173,7 +199,7 @@ body_point_main.o:
 	$(CXX) -c $(compileFlags) Examples/BodyPointConstraint/main.cpp -o bin/body_point_main.o
 
 # Link the program and create the executable
-rigid_double_pend: $(objects) rigid_double_pend_main.o
+rigid_double_pend: $(objects) $(imgui_objects) rigid_double_pend_main.o
 	$(CXX) $(objects) $(imgui_objects) bin/rigid_double_pend_main.o -o $(target) $(linkFlags)
 
 rigid_double_pend_main.o:
