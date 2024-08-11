@@ -11,6 +11,7 @@
 
 #include "raylib-cpp.hpp"
 #include "imgui.h"
+#include "implot.h"
 #include "rlImGui.h"
 
 #include <Eigen/Dense>
@@ -254,8 +255,11 @@ int main() {
         Render_System(my_world);
 
         rlImGuiBegin();
-        bool open = true;
-        ImGui::ShowDemoWindow(&open); 
+        ImPlot::CreateContext();
+
+        ImPlot::ShowDemoWindow();
+        
+        ImPlot::DestroyContext();
         rlImGuiEnd();
 
         EndDrawing();

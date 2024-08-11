@@ -22,9 +22,9 @@ sources := $(call rwildcard,src/,*.cpp)
 objects := $(patsubst src/%, $(buildDir)/%, $(patsubst %.cpp, %.o, $(sources)))
 depends := $(patsubst %.o, %.d, $(objects))
 
-include_dirs := -I include -I ./include/ECS -I ./include/ECS/components -I /usr/include/eigen3/ -I ./vendor/raylib/src -I ./vendor/raylib-cpp/include -I ./vendor/rlImGui/ -I ./vendor/imgui/
+include_dirs := -I include -I ./include/ECS -I ./include/ECS/components -I /usr/include/eigen3/ -I ./vendor/raylib/src -I ./vendor/raylib-cpp/include -I ./vendor/rlImGui/ -I ./vendor/imgui/ -I ./vendor/implot/
 compileFlags := -std=c++17  $(include_dirs) -O1 -Wall
-linkFlags = -L lib/$(platform) -l raylib -l imgui_rl_backend 
+linkFlags = -L lib/$(platform) -l raylib -l imgui_rl_backend -l implot
 
 # ImGui Itself
 imgui_dir := ./vendor/imgui
@@ -39,6 +39,15 @@ rlImGui_build_dir := $(buildDir)/rlImGui
 rlImGui_sources := $(rlImGui_dir)/rlImGui.cpp 
 rlImGui_objects := $(patsubst $(rlImGui_dir)/%, $(rlImGui_build_dir)/%, $(patsubst %.cpp, %.o, $(rlImGui_sources)))
 depends += $(patsubst %.o, %.d, $(rlImGui_objects))
+
+# ImPlot Itself
+implot_dir := ./vendor/implot
+implot_build_dir := $(buildDir)/implot
+implot_sources := $(implot_dir)/implot.cpp $(implot_dir)/implot_demo.cpp $(implot_dir)/implot_items.cpp 
+implot_objects := $(patsubst $(implot_dir)/%, $(implot_build_dir)/%, $(patsubst %.cpp, %.o, $(implot_sources)))
+depends += $(patsubst %.o, %.d, $(implot_objects))
+
+
 
 # Check for Windows
 ifeq ($(OS), Windows_NT)
@@ -85,7 +94,7 @@ endif
 all: $(target) execute #clean
 
 # Sets up the project for compiling libs
-setup: libraylib.a libimgui_rl_backend.a
+setup: libraylib.a libimgui_rl_backend.a libimplot.a
 
 # Pull and update the the build submodules
 submodules:
@@ -114,6 +123,19 @@ bin/rlImGui/%.o: $(rlImGui_dir)/%.cpp
 	$(info $@)	
 	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)
 	@echo ""
+
+# Build implot static library file and copy it into lib
+libimplot.a: $(implot_objects)
+	ar rcs lib/$(platform)/libimplot.a $(implot_objects)
+	@echo ""
+
+bin/implot/%.o: $(implot_dir)/%.cpp
+	$(MKDIR) $(call platformpth, $(@D))	
+	$(info $@)	
+	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)	
+	@echo ""
+
+
 
 # Add all rules from dependency files
 -include $(depends)

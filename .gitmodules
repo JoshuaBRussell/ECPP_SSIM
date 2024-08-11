@@ -10,3 +10,6 @@
 [submodule "vendor/rlImGui"]
 	path = vendor/rlImGui
 	url = git@github.com:raylib-extras/rlImGui.git
+[submodule "vendor/implot"]
+	path = vendor/implot
+	url = https://github.com/epezent/implot
