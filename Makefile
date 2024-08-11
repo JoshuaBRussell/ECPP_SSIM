@@ -81,34 +81,27 @@ endif
 # Default target, compiles, executes and cleans
 all: $(target) execute #clean
 
-# Sets up the project for compiling, generates includes and libs
-setup: librl libimgui_rl_backend 
+# Sets up the project for compiling libs
+setup: libraylib.a libimgui_rl_backend.a
 
 # Pull and update the the build submodules
 submodules:
 	git submodule update --init --recursive
 
 # Build the raylib static library file and copy it into lib
-librl: submodules
+libraylib.a:
 	cd vendor/raylib/src $(THEN) "$(MAKE)" PLATFORM=PLATFORM_DESKTOP
 	$(MKDIR) $(call platformpth, lib/$(platform))
 	$(call COPY,vendor/raylib/$(libGenDir),lib/$(platform),libraylib.a)
 
 # Build imgui static library file and copy it into lib
-libimgui_rl_backend: imgui imgui_backend submodules
+libimgui_rl_backend.a: $(imgui_objects) $(rlImGui_objects)
 	ar rcs lib/$(platform)/libimgui_rl_backend.a $(imgui_objects) $(rlImGui_objects)
-
-imgui: $(imgui_objects) imgui_backend
-	$(info $(imgui_objects))
 
 bin/imgui/%.o: $(imgui_dir)/%.cpp
 	$(MKDIR) $(call platformpth, $(@D))	
 	$(info $@)	
 	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)	
-
-# Uses raylib as the backend
-imgui_backend: $(rlImGui_objects)
-	$(info $<)	
 
 bin/rlImGui/%.o: $(rlImGui_dir)/%.cpp
 	$(MKDIR) $(call platformpth, $(@D))	
