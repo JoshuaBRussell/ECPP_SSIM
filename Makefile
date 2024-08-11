@@ -19,7 +19,6 @@ target := $(buildDir)/$(executable)
 
 # ECPPS_SIM Sources
 sources := $(call rwildcard,src/,*.cpp)
-source += $(call rwildcard,vendor/imgui/,*.cpp) #TODO: Why is this here?
 objects := $(patsubst src/%, $(buildDir)/%, $(patsubst %.cpp, %.o, $(sources)))
 depends := $(patsubst %.o, %.d, $(objects))
 
