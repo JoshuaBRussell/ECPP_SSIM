@@ -4,6 +4,10 @@
 # For conditions of distribution and use, please see:
 #     https://opensource.org/licenses/Zlib
 
+
+
+# ---- Modified from it's original version ----#
+
 # Define custom functions
 rwildcard = $(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 platformpth = $(subst /,$(PATHSEP),$1)
@@ -188,7 +192,7 @@ body_point_main.o:
 	$(CXX) -c $(compileFlags) Examples/BodyPointConstraint/main.cpp -o bin/body_point_main.o
 
 # Link the program and create the executable
-rigid_double_pend: $(objects) $(imgui_objects) rigid_double_pend_main.o
+rigid_double_pend: $(objects) libimgui_rl_backend.a libraylib.a rigid_double_pend_main.o
 	$(CXX) $(objects) $(imgui_objects) bin/rigid_double_pend_main.o -o $(target) $(linkFlags)
 
 rigid_double_pend_main.o:
