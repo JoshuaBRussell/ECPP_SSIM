@@ -97,30 +97,34 @@ libraylib.a:
 	cd vendor/raylib/src $(THEN) "$(MAKE)" PLATFORM=PLATFORM_DESKTOP
 	$(MKDIR) $(call platformpth, lib/$(platform))
 	$(call COPY,vendor/raylib/$(libGenDir),lib/$(platform),libraylib.a)
+	@echo ""
 
 # Build imgui static library file and copy it into lib
 libimgui_rl_backend.a: $(imgui_objects) $(rlImGui_objects)
 	ar rcs lib/$(platform)/libimgui_rl_backend.a $(imgui_objects) $(rlImGui_objects)
+	@echo ""
 
 bin/imgui/%.o: $(imgui_dir)/%.cpp
 	$(MKDIR) $(call platformpth, $(@D))	
 	$(info $@)	
 	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)	
+	@echo ""
 
 bin/rlImGui/%.o: $(rlImGui_dir)/%.cpp
 	$(MKDIR) $(call platformpth, $(@D))	
 	$(info $@)	
 	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)
-
+	@echo ""
 
 # Add all rules from dependency files
 -include $(depends)
 
 # Compile objects to the build directory
-$(buildDir)/%.o: src/%.cpp Makefile
+$(buildDir)/%.o: src/%.cpp Makefile	
 	$(MKDIR) $(call platformpth, $(@D))
-	$(info $(@D)) 
+	$(info $@) 
 	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)
+	@echo ""
 
 # Run the executable
 execute:
