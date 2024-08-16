@@ -64,6 +64,8 @@
 
 #define TEMP_DT (1/TARGET_FPS)
 
+#define TWO_PI 6.2831853 // Only used for visualization modulo
+
 #define WINDOW_NAME "Pendulum Visualization"
 
 void add_rigid_body_to_world(ECS_Manager &world, int entity_id, Eigen::Vector2d pos, double angle){
@@ -200,15 +202,17 @@ int main() {
     my_world.add_component<Render_Component>(bg_render_comp);
     my_world.add_component<Rotation_Component>(bg_rot_comp); 
     
+    int rb1_id = -1;
+    int rb2_id = -1; 
     for (int i = 0; i < 2; i++){
         // First Rigid Body
         entity_id++;
-        int rb1_id = entity_id;
+        rb1_id = entity_id;
         add_rigid_body_to_world(my_world, rb1_id, Eigen::Vector2d(1.0, 0.0), 1.5707);
         
         // Second Rigid Body
         entity_id++;
-        int rb2_id = entity_id; 
+        rb2_id = entity_id; 
         add_rigid_body_to_world(my_world, rb2_id, Eigen::Vector2d(2.0, -1.0), 0.0); 
         
         // Fixed Position Constraint
@@ -232,7 +236,16 @@ int main() {
     
     rlImGuiSetup(true);
 
+    float x[3000];
+    float y[3000];
+    float y2[3000];
+    for (int i = 0; i < 3000; i++){
+        x[i] = i * 0.001f;
+        y[i] = 0.5f + 0.5f * sinf(50*(x[i] + (float)ImGui::GetTime()/10));
+    }
+
     int i = 0;
+    float t = 0;
     while (!w.ShouldClose()) // Detect window close button or ESC key
     //while (i < 1)
     {
@@ -250,6 +263,9 @@ int main() {
         // Converts Physical Coordinates to something the Render_System can use (Screen Coords)
         Particle_Visualization_System(my_world);
 
+        Rotation_Component* rot_comp_ptr1 = my_world.get_component<Rotation_Component>(rb1_id);
+        Rotation_Component* rot_comp_ptr2 = my_world.get_component<Rotation_Component>(rb2_id);
+
         BeginDrawing();
         ClearBackground(BLACK);
         Render_System(my_world);
@@ -257,9 +273,38 @@ int main() {
         rlImGuiBegin();
         ImPlot::CreateContext();
 
-        ImPlot::ShowDemoWindow();
+        
+        bool open = true;
+        bool* p_open = &open;
+        
+        //ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
+        //ImGui::SetNextWindowSize(ImVec2(300, 50), ImGuiCond_FirstUseEver);
+        
+        ImGui::Begin("Data", p_open); 
+        
+        t += ImGui::GetIO().DeltaTime; 
+        
+        x[i%3000] = std::fmod(i * 0.001f, 3.0); 
+        y[i%3000] = 0.5f + 0.5f * sinf(50*(x[i%3000] + (float)ImGui::GetTime()/10)); 
+        y[i%3000]  = rot_comp_ptr1->angle;  
+        float v = rot_comp_ptr2->angle;
+        while (v >= M_PI) v -= TWO_PI;
+        while (v < M_PI)  v += TWO_PI;  
+        y2[i%3000] = v;
+
+        if (ImPlot::BeginPlot("Line Plot")){
+            ImPlot::SetupAxisLimits(ImAxis_X1,  0.0, 3.0); 
+            ImPlot::SetupAxisLimits(ImAxis_Y1, -12, 12); 
+            ImPlot::SetupAxes("x", "y");
+            
+            ImPlot::PlotLine("f(x)", x, y,  i%3000, 0, 0, sizeof(float));
+            ImPlot::PlotLine("g(x)", x, y2, i%3000, 0, 0, sizeof(float)); 
+            
+            ImPlot::EndPlot();
+        }
         
         ImPlot::DestroyContext();
+        ImGui::End();
         rlImGuiEnd();
 
         EndDrawing();
