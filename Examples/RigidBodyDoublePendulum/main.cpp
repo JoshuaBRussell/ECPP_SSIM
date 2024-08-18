@@ -277,16 +277,23 @@ int main() {
         bool open = true;
         bool* p_open = &open;
         
-        //ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-        //ImGui::SetNextWindowSize(ImVec2(300, 50), ImGuiCond_FirstUseEver);
+        // Prevent ImGui from saving a config state
+        // Prefer to let the specific application set it
+        ImGuiIO& io = ImGui::GetIO();
+        io.IniFilename = NULL;
+        io.LogFilename = NULL;
+
+        ImGui::SetNextWindowPos(ImVec2(0, 0));//, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(475, 350));//, ImGuiCond_FirstUseEver);
         
-        ImGui::Begin("Data", p_open); 
+        ImGui::Begin("Joint Angles", p_open); 
         
-        t += ImGui::GetIO().DeltaTime; 
+        t += ImGui::GetIO().DeltaTime;
+
         
         x[i%3000] = std::fmod(i * 0.001f, 3.0); 
-        y[i%3000] = 0.5f + 0.5f * sinf(50*(x[i%3000] + (float)ImGui::GetTime()/10)); 
         y[i%3000]  = rot_comp_ptr1->angle;  
+        
         float v = rot_comp_ptr2->angle;
         while (v >= M_PI) v -= TWO_PI;
         while (v < M_PI)  v += TWO_PI;  
@@ -297,8 +304,8 @@ int main() {
             ImPlot::SetupAxisLimits(ImAxis_Y1, -12, 12); 
             ImPlot::SetupAxes("x", "y");
             
-            ImPlot::PlotLine("f(x)", x, y,  i%3000, 0, 0, sizeof(float));
-            ImPlot::PlotLine("g(x)", x, y2, i%3000, 0, 0, sizeof(float)); 
+            ImPlot::PlotLine("Angle 1", x, y,  i%3000, 0, 0, sizeof(float));
+            ImPlot::PlotLine("Angle 2", x, y2, i%3000, 0, 0, sizeof(float)); 
             
             ImPlot::EndPlot();
         }
