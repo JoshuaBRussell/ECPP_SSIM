@@ -153,7 +153,7 @@ int main() {
     raylib::Color textColor(LIGHTGRAY);
     raylib::Window w(SCREEN_WIDTH_IN_PIXELS, SCREEN_HEIGHT_IN_PIXELS, WINDOW_NAME);
     
-    //SetTargetFPS(TARGET_FPS); 
+    SetTargetFPS(TARGET_FPS); 
      
     ECS_Manager my_world;
 
@@ -236,13 +236,9 @@ int main() {
     
     rlImGuiSetup(true);
 
-    float x[3000];
-    float y[3000];
-    float y2[3000];
-    for (int i = 0; i < 3000; i++){
-        x[i] = i * 0.001f;
-        y[i] = 0.5f + 0.5f * sinf(50*(x[i] + (float)ImGui::GetTime()/10));
-    }
+    float x[180];
+    float y[180];
+    float y2[180];
 
     int i = 0;
     float t = 0;
@@ -291,25 +287,26 @@ int main() {
         t += ImGui::GetIO().DeltaTime;
 
         
-        x[i%3000] = std::fmod(i * 0.001f, 3.0); 
-        y[i%3000]  = rot_comp_ptr1->angle;  
+        x[i%180] = std::fmod(i * 1.0/TARGET_FPS, 3.0); 
+        y[i%180]  = rot_comp_ptr1->angle;  
         
         float v = rot_comp_ptr2->angle;
         while (v >= M_PI) v -= TWO_PI;
         while (v < M_PI)  v += TWO_PI;  
-        y2[i%3000] = v;
-
+        y2[i%180] = v;
+        
         if (ImPlot::BeginPlot("Line Plot")){
             ImPlot::SetupAxisLimits(ImAxis_X1,  0.0, 3.0); 
             ImPlot::SetupAxisLimits(ImAxis_Y1, -12, 12); 
             ImPlot::SetupAxes("x", "y");
             
-            ImPlot::PlotLine("Angle 1", x, y,  i%3000, 0, 0, sizeof(float));
-            ImPlot::PlotLine("Angle 2", x, y2, i%3000, 0, 0, sizeof(float)); 
+            ImPlot::PlotLine("Angle 1", x, y,  i%180, 0, 0, sizeof(float));
+            ImPlot::PlotLine("Angle 2", x, y2, i%180, 0, 0, sizeof(float)); 
             
             ImPlot::EndPlot();
         }
         
+        //ImPlot::ShowDemoWindow(); 
         ImPlot::DestroyContext();
         ImGui::End();
         rlImGuiEnd();
