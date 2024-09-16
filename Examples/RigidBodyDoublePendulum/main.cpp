@@ -145,6 +145,63 @@ void add_rel_constr(ECS_Manager &world,
     world.add_component<Rotation_Component>(init_constr_rot_val2);
 
 }
+static float x[180];
+static float y[180];
+static float y2[180];
+
+static float t = 0;
+static int   i = 0;
+
+void custom_plots(ECS_Manager &world, int rb1_id, int rb2_id){
+    rlImGuiBegin();
+    ImPlot::CreateContext();
+
+    
+    bool open = true;
+    bool* p_open = &open;
+    
+    // Prevent ImGui from saving a config state
+    // Prefer to let the specific application set it
+    ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = NULL;
+    io.LogFilename = NULL;
+
+    ImGui::SetNextWindowPos(ImVec2(0, 0));//, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(475, 350));//, ImGuiCond_FirstUseEver);
+    
+    ImGui::Begin("Joint Angles", p_open); 
+    
+    t += ImGui::GetIO().DeltaTime;
+    
+    Rotation_Component* rot_comp_ptr1 = world.get_component<Rotation_Component>(rb1_id);
+    Rotation_Component* rot_comp_ptr2 = world.get_component<Rotation_Component>(rb2_id);
+    
+    i++; 
+    x[i%180] = std::fmod(i * 1.0/TARGET_FPS, 3.0); 
+    y[i%180]  = (180.0/3.14159)*rot_comp_ptr1->angle;  
+    
+    float v = rot_comp_ptr2->angle;
+    while (v >= M_PI) v -= TWO_PI;
+    while (v < M_PI)  v += TWO_PI;  
+    y2[i%180] = (180.0/3.14159)*v - 360.0;
+    //y2[i%180] = (180.0/3.14159)*rot_comp_ptr2->angle - 360.0; 
+    
+    if (ImPlot::BeginPlot("Line Plot")){
+        ImPlot::SetupAxisLimits(ImAxis_X1,  0.0, 3.0); 
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -180, 180); 
+        ImPlot::SetupAxes("x", "y");
+        
+        ImPlot::PlotLine("Angle 1", x, y,  i%180, 0, 0, sizeof(float));
+        ImPlot::PlotLine("Angle 2", x, y2, i%180, 0, 0, sizeof(float)); 
+        
+        ImPlot::EndPlot();
+    }
+    
+    //ImPlot::ShowDemoWindow(); 
+    ImPlot::DestroyContext();
+    ImGui::End();
+    rlImGuiEnd();
+}
 
 
 int main() {
@@ -236,17 +293,9 @@ int main() {
     
     rlImGuiSetup(true);
 
-    float x[180];
-    float y[180];
-    float y2[180];
-
-    int i = 0;
-    float t = 0;
+    
     while (!w.ShouldClose()) // Detect window close button or ESC key
-    //while (i < 1)
     {
-        i++; 
-        //if (i%30 == 0){ 
         for (int i = 0; i < 100; i ++){
             Gravity_System(my_world); 
             Constraint_System(my_world);
@@ -259,60 +308,14 @@ int main() {
         // Converts Physical Coordinates to something the Render_System can use (Screen Coords)
         Particle_Visualization_System(my_world);
 
-        Rotation_Component* rot_comp_ptr1 = my_world.get_component<Rotation_Component>(rb1_id);
-        Rotation_Component* rot_comp_ptr2 = my_world.get_component<Rotation_Component>(rb2_id);
 
         BeginDrawing();
         ClearBackground(BLACK);
+        
         Render_System(my_world);
-
-        rlImGuiBegin();
-        ImPlot::CreateContext();
-
-        
-        bool open = true;
-        bool* p_open = &open;
-        
-        // Prevent ImGui from saving a config state
-        // Prefer to let the specific application set it
-        ImGuiIO& io = ImGui::GetIO();
-        io.IniFilename = NULL;
-        io.LogFilename = NULL;
-
-        ImGui::SetNextWindowPos(ImVec2(0, 0));//, ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(475, 350));//, ImGuiCond_FirstUseEver);
-        
-        ImGui::Begin("Joint Angles", p_open); 
-        
-        t += ImGui::GetIO().DeltaTime;
-
-        
-        x[i%180] = std::fmod(i * 1.0/TARGET_FPS, 3.0); 
-        y[i%180]  = rot_comp_ptr1->angle;  
-        
-        float v = rot_comp_ptr2->angle;
-        while (v >= M_PI) v -= TWO_PI;
-        while (v < M_PI)  v += TWO_PI;  
-        y2[i%180] = v;
-        
-        if (ImPlot::BeginPlot("Line Plot")){
-            ImPlot::SetupAxisLimits(ImAxis_X1,  0.0, 3.0); 
-            ImPlot::SetupAxisLimits(ImAxis_Y1, -12, 12); 
-            ImPlot::SetupAxes("x", "y");
-            
-            ImPlot::PlotLine("Angle 1", x, y,  i%180, 0, 0, sizeof(float));
-            ImPlot::PlotLine("Angle 2", x, y2, i%180, 0, 0, sizeof(float)); 
-            
-            ImPlot::EndPlot();
-        }
-        
-        //ImPlot::ShowDemoWindow(); 
-        ImPlot::DestroyContext();
-        ImGui::End();
-        rlImGuiEnd();
+        custom_plots(my_world, rb1_id, rb2_id); 
 
         EndDrawing();
-        //} 
     }
 
     rlImGuiShutdown();
