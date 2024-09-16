@@ -6,10 +6,13 @@
 #include <array>
 #include <set>
 #include <string>
-
 #include <math.h>
 #include <cmath>
-#include <raylib-cpp.hpp>
+
+#include "raylib-cpp.hpp"
+#include "imgui.h"
+#include "implot.h"
+#include "rlImGui.h"
 
 #include <Eigen/Dense>
 
@@ -60,6 +63,8 @@
 #define TARGET_FPS 60.0
 
 #define TEMP_DT (1/TARGET_FPS)
+
+#define TWO_PI 6.2831853 // Only used for visualization modulo
 
 #define WINDOW_NAME "Pendulum Visualization"
 
@@ -140,6 +145,63 @@ void add_rel_constr(ECS_Manager &world,
     world.add_component<Rotation_Component>(init_constr_rot_val2);
 
 }
+static float x[180];
+static float y[180];
+static float y2[180];
+
+static float t = 0;
+static int   i = 0;
+
+void custom_plots(ECS_Manager &world, int rb1_id, int rb2_id){
+    rlImGuiBegin();
+    ImPlot::CreateContext();
+
+    
+    bool open = true;
+    bool* p_open = &open;
+    
+    // Prevent ImGui from saving a config state
+    // Prefer to let the specific application set it
+    ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = NULL;
+    io.LogFilename = NULL;
+
+    ImGui::SetNextWindowPos(ImVec2(0, 0));//, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(475, 350));//, ImGuiCond_FirstUseEver);
+    
+    ImGui::Begin("Joint Angles", p_open); 
+    
+    t += ImGui::GetIO().DeltaTime;
+    
+    Rotation_Component* rot_comp_ptr1 = world.get_component<Rotation_Component>(rb1_id);
+    Rotation_Component* rot_comp_ptr2 = world.get_component<Rotation_Component>(rb2_id);
+    
+    i++; 
+    x[i%180] = std::fmod(i * 1.0/TARGET_FPS, 3.0); 
+    y[i%180]  = (180.0/3.14159)*rot_comp_ptr1->angle;  
+    
+    float v = rot_comp_ptr2->angle;
+    while (v >= M_PI) v -= TWO_PI;
+    while (v < M_PI)  v += TWO_PI;  
+    y2[i%180] = (180.0/3.14159)*v - 360.0;
+    //y2[i%180] = (180.0/3.14159)*rot_comp_ptr2->angle - 360.0; 
+    
+    if (ImPlot::BeginPlot("Line Plot")){
+        ImPlot::SetupAxisLimits(ImAxis_X1,  0.0, 3.0); 
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -180, 180); 
+        ImPlot::SetupAxes("x", "y");
+        
+        ImPlot::PlotLine("Angle 1", x, y,  i%180, 0, 0, sizeof(float));
+        ImPlot::PlotLine("Angle 2", x, y2, i%180, 0, 0, sizeof(float)); 
+        
+        ImPlot::EndPlot();
+    }
+    
+    //ImPlot::ShowDemoWindow(); 
+    ImPlot::DestroyContext();
+    ImGui::End();
+    rlImGuiEnd();
+}
 
 
 int main() {
@@ -148,7 +210,7 @@ int main() {
     raylib::Color textColor(LIGHTGRAY);
     raylib::Window w(SCREEN_WIDTH_IN_PIXELS, SCREEN_HEIGHT_IN_PIXELS, WINDOW_NAME);
     
-    //SetTargetFPS(TARGET_FPS); 
+    SetTargetFPS(TARGET_FPS); 
      
     ECS_Manager my_world;
 
@@ -197,15 +259,17 @@ int main() {
     my_world.add_component<Render_Component>(bg_render_comp);
     my_world.add_component<Rotation_Component>(bg_rot_comp); 
     
+    int rb1_id = -1;
+    int rb2_id = -1; 
     for (int i = 0; i < 2; i++){
         // First Rigid Body
         entity_id++;
-        int rb1_id = entity_id;
+        rb1_id = entity_id;
         add_rigid_body_to_world(my_world, rb1_id, Eigen::Vector2d(1.0, 0.0), 1.5707);
         
         // Second Rigid Body
         entity_id++;
-        int rb2_id = entity_id; 
+        rb2_id = entity_id; 
         add_rigid_body_to_world(my_world, rb2_id, Eigen::Vector2d(2.0, -1.0), 0.0); 
         
         // Fixed Position Constraint
@@ -226,13 +290,12 @@ int main() {
     Constraint_Visualization_Init(constr_visual_config1);
     Particle_Visualization_Init(particle_visual_config1);
     Constraint_System_Init(my_world); 
+    
+    rlImGuiSetup(true);
 
-    int i = 0;
+    
     while (!w.ShouldClose()) // Detect window close button or ESC key
-    //while (i < 1)
     {
-        i++; 
-        //if (i%30 == 0){ 
         for (int i = 0; i < 100; i ++){
             Gravity_System(my_world); 
             Constraint_System(my_world);
@@ -245,12 +308,17 @@ int main() {
         // Converts Physical Coordinates to something the Render_System can use (Screen Coords)
         Particle_Visualization_System(my_world);
 
+
         BeginDrawing();
         ClearBackground(BLACK);
+        
         Render_System(my_world);
+        custom_plots(my_world, rb1_id, rb2_id); 
+
         EndDrawing();
-        //} 
     }
+
+    rlImGuiShutdown();
  
     return 0;
 }

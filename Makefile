@@ -4,6 +4,10 @@
 # For conditions of distribution and use, please see:
 #     https://opensource.org/licenses/Zlib
 
+
+
+# ---- Modified from it's original version ----#
+
 # Define custom functions
 rwildcard = $(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 platformpth = $(subst /,$(PATHSEP),$1)
@@ -12,12 +16,38 @@ platformpth = $(subst /,$(PATHSEP),$1)
 buildDir := bin
 executable := app
 target := $(buildDir)/$(executable)
+
+# ECPPS_SIM Sources
 sources := $(call rwildcard,src/,*.cpp)
 objects := $(patsubst src/%, $(buildDir)/%, $(patsubst %.cpp, %.o, $(sources)))
 depends := $(patsubst %.o, %.d, $(objects))
-include_dirs := -I include -I ./include/ECS -I ./include/ECS/components -I /usr/include/eigen3/ -I ./vendor/raylib/src -I ./vendor/raylib-cpp/include
+
+include_dirs := -I include -I ./include/ECS -I ./include/ECS/components -I /usr/include/eigen3/ -I ./vendor/raylib/src -I ./vendor/raylib-cpp/include -I ./vendor/rlImGui/ -I ./vendor/imgui/ -I ./vendor/implot/
 compileFlags := -std=c++17  $(include_dirs) -O1 -Wall
-linkFlags = -L lib/$(platform) -l raylib
+linkFlags = -L lib/$(platform) -l raylib -l imgui_rl_backend -l implot
+
+# ImGui Itself
+imgui_dir := ./vendor/imgui
+imgui_build_dir := $(buildDir)/imgui
+imgui_sources := $(imgui_dir)/imgui.cpp $(imgui_dir)/imgui_demo.cpp $(imgui_dir)/imgui_draw.cpp $(imgui_dir)/imgui_tables.cpp $(imgui_dir)/imgui_widgets.cpp 
+imgui_objects := $(patsubst $(imgui_dir)/%, $(imgui_build_dir)/%, $(patsubst %.cpp, %.o, $(imgui_sources)))
+depends += $(patsubst %.o, %.d, $(imgui_objects))
+
+# ImGui Backend - Currently raylib
+rlImGui_dir := ./vendor/rlImGui
+rlImGui_build_dir := $(buildDir)/rlImGui
+rlImGui_sources := $(rlImGui_dir)/rlImGui.cpp 
+rlImGui_objects := $(patsubst $(rlImGui_dir)/%, $(rlImGui_build_dir)/%, $(patsubst %.cpp, %.o, $(rlImGui_sources)))
+depends += $(patsubst %.o, %.d, $(rlImGui_objects))
+
+# ImPlot Itself
+implot_dir := ./vendor/implot
+implot_build_dir := $(buildDir)/implot
+implot_sources := $(implot_dir)/implot.cpp $(implot_dir)/implot_demo.cpp $(implot_dir)/implot_items.cpp 
+implot_objects := $(patsubst $(implot_dir)/%, $(implot_build_dir)/%, $(patsubst %.cpp, %.o, $(implot_sources)))
+depends += $(patsubst %.o, %.d, $(implot_objects))
+
+
 
 # Check for Windows
 ifeq ($(OS), Windows_NT)
@@ -63,27 +93,59 @@ endif
 # Default target, compiles, executes and cleans
 all: $(target) execute #clean
 
-# Sets up the project for compiling, generates includes and libs
-setup: lib
+# Sets up the project for compiling libs
+setup: libraylib.a libimgui_rl_backend.a libimplot.a
 
 # Pull and update the the build submodules
 submodules:
 	git submodule update --init --recursive
 
 # Build the raylib static library file and copy it into lib
-lib: submodules
+libraylib.a:
 	cd vendor/raylib/src $(THEN) "$(MAKE)" PLATFORM=PLATFORM_DESKTOP
 	$(MKDIR) $(call platformpth, lib/$(platform))
 	$(call COPY,vendor/raylib/$(libGenDir),lib/$(platform),libraylib.a)
+	@echo ""
+
+# Build imgui static library file and copy it into lib
+libimgui_rl_backend.a: $(imgui_objects) $(rlImGui_objects)
+	ar rcs lib/$(platform)/libimgui_rl_backend.a $(imgui_objects) $(rlImGui_objects)
+	@echo ""
+
+bin/imgui/%.o: $(imgui_dir)/%.cpp
+	$(MKDIR) $(call platformpth, $(@D))	
+	$(info $@)	
+	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)	
+	@echo ""
+
+bin/rlImGui/%.o: $(rlImGui_dir)/%.cpp
+	$(MKDIR) $(call platformpth, $(@D))	
+	$(info $@)	
+	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)
+	@echo ""
+
+# Build implot static library file and copy it into lib
+libimplot.a: $(implot_objects)
+	ar rcs lib/$(platform)/libimplot.a $(implot_objects)
+	@echo ""
+
+bin/implot/%.o: $(implot_dir)/%.cpp
+	$(MKDIR) $(call platformpth, $(@D))	
+	$(info $@)	
+	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)	
+	@echo ""
+
+
 
 # Add all rules from dependency files
 -include $(depends)
 
 # Compile objects to the build directory
-$(buildDir)/%.o: src/%.cpp Makefile
+$(buildDir)/%.o: src/%.cpp Makefile	
 	$(MKDIR) $(call platformpth, $(@D))
-	$(info This works) 
+	$(info $@) 
 	$(CXX) -MMD -MP -c $(compileFlags) $< -o $@ $(CXXFLAGS)
+	@echo ""
 
 # Run the executable
 execute:
@@ -155,8 +217,8 @@ body_point_main.o:
 	$(CXX) -c $(compileFlags) Examples/BodyPointConstraint/main.cpp -o bin/body_point_main.o
 
 # Link the program and create the executable
-rigid_double_pend: $(objects) rigid_double_pend_main.o
-	$(CXX) $(objects) bin/rigid_double_pend_main.o -o $(target) $(linkFlags)
+rigid_double_pend: $(objects) libimgui_rl_backend.a libraylib.a rigid_double_pend_main.o
+	$(CXX) $(objects) $(imgui_objects) bin/rigid_double_pend_main.o -o $(target) $(linkFlags)
 
 rigid_double_pend_main.o:
 	$(CXX) -c $(compileFlags) Examples/RigidBodyDoublePendulum/main.cpp -o bin/rigid_double_pend_main.o
