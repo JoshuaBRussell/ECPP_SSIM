@@ -222,3 +222,10 @@ rigid_double_pend: $(objects) libimgui_rl_backend.a libraylib.a rigid_double_pen
 
 rigid_double_pend_main.o:
 	$(CXX) -c $(compileFlags) Examples/RigidBodyDoublePendulum/main.cpp -o bin/rigid_double_pend_main.o
+
+# Link the program and create the executable
+complex_shape: $(objects) libimgui_rl_backend.a libraylib.a complex_shape_main.o
+	$(CXX) $(objects) $(imgui_objects) bin/complex_shape_main.o -o $(target) $(linkFlags)
+
+complex_shape_main.o:
+	$(CXX) -c $(compileFlags) Examples/ComplexShape/main.cpp -o bin/complex_shape_main.o
