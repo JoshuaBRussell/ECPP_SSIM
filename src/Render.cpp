@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <assert.h>
 
 #include "AudioDevice.hpp"
 #include "ECS.hpp"
@@ -17,6 +18,16 @@
 
 #include "raylib-cpp.hpp"
 #include "raylib.h"
+
+static const ssize_t MAX_PRE_RENDER_SYSTEMS = 256;
+static void (*pre_render_systems_array[MAX_PRE_RENDER_SYSTEMS])(ECS_Manager&) = {nullptr};
+static ssize_t pre_render_systems_count = 0;
+
+static const ssize_t MAX_POST_RENDER_SYSTEMS = 256;
+static void (*post_render_systems_array[MAX_POST_RENDER_SYSTEMS])(ECS_Manager&) = {nullptr};
+static ssize_t post_render_systems_count = 0;
+
+
 
 static std::map<std::string, raylib::Texture2D*> texture_repo;
 
@@ -100,11 +111,47 @@ void Render_System_NonExclusive(ECS_Manager &world){
 }
 */
 
+void Render_System_add_pre_render(void (*sys)(ECS_Manager&)){
+    if (sys == nullptr){
+        return; // Do Nothing
+    }
+
+    pre_render_systems_array[pre_render_systems_count] = sys;
+    pre_render_systems_count++;
+}
+
+static void call_pre_render_systems(ECS_Manager &world){
+
+    for (ssize_t i = 0; i < pre_render_systems_count; i++){
+        assert(pre_render_systems_array[i] != nullptr);
+        (*(pre_render_systems_array[i]))(world);
+    }
+}
+
+void Render_System_add_post_render(void (*sys)(ECS_Manager&)){
+    if (sys == nullptr){
+        return; // Do Nothing
+    }
+
+    post_render_systems_array[post_render_systems_count] = sys;
+    post_render_systems_count++;
+}
+
+static void call_post_render_systems(ECS_Manager &world){
+
+    for (ssize_t i = 0; i < post_render_systems_count; i++){
+        assert(post_render_systems_array[i] != nullptr);
+        (*(post_render_systems_array[i]))(world);
+    }
+}
+
 void Render_System(ECS_Manager &world){
-   
-    for (auto it = world.get_component_begin<Render_Component>(); 
+
+    call_pre_render_systems(world);
+
+    for (auto it = world.get_component_begin<Render_Component>();
               it < world.get_component_end<Render_Component>(); it++){
-        
+
         // Check to see if the texture has been seen before
         std::string tex_loc = world.get_component<Render_Component>(it->entity_id)->texture_loc;
         if (texture_repo.find(tex_loc) == texture_repo.end()){
@@ -139,7 +186,8 @@ void Render_System(ECS_Manager &world){
         ID_str.Draw(x_pos, y_pos);
         */  
     }
- 
+
     DrawFPS(10,10);
 
+    call_post_render_systems(world);
 }
