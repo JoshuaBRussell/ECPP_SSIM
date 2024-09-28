@@ -233,6 +233,8 @@ void Custom_Plots(ECS_Manager &world){
     ImPlot::DestroyContext();
     ImGui::End();
     
+    rlImGuiEnd();
+
 }
 
 
@@ -415,7 +417,7 @@ int main(){
         
         Render_System(my_world);
         
-        rlImGuiEnd(); 
+         
 
         EndDrawing();
     }
