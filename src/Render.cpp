@@ -27,9 +27,23 @@ static const ssize_t MAX_POST_RENDER_SYSTEMS = 256;
 static void (*post_render_systems_array[MAX_POST_RENDER_SYSTEMS])(ECS_Manager&) = {nullptr};
 static ssize_t post_render_systems_count = 0;
 
-
-
 static std::map<std::string, raylib::Texture2D*> texture_repo;
+
+void Render_System_Init(ECS_Manager &world, struct render_config &render_config){
+    std::cout << "HERE\n" << std::endl;  
+    raylib::Color textColor(LIGHTGRAY);
+    InitWindow(render_config.screen_width_in_pixels, render_config.screen_height_in_pixels, render_config.window_title.c_str()); 
+    SetTargetFPS(render_config.target_fps);
+
+}
+
+void Render_System_Shutdown(){
+    CloseWindow();
+}
+
+bool Render_System_WindowShouldClose(){
+    return WindowShouldClose();
+}
 
 /*
 void Render_System_Exclusive(ECS_Manager &world){
@@ -148,6 +162,9 @@ static void call_post_render_systems(ECS_Manager &world){
 void Render_System(ECS_Manager &world){
 
     call_pre_render_systems(world);
+    
+    BeginDrawing();
+    ClearBackground(BLACK); 
 
     for (auto it = world.get_component_begin<Render_Component>();
               it < world.get_component_end<Render_Component>(); it++){
@@ -190,4 +207,7 @@ void Render_System(ECS_Manager &world){
     DrawFPS(10,10);
 
     call_post_render_systems(world);
+    
+    EndDrawing();
+
 }

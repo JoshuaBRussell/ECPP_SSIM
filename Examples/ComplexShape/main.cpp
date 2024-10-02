@@ -9,7 +9,6 @@
 #include <math.h>
 #include <cmath>
 
-#include "raylib-cpp.hpp"
 #include "imgui.h"
 #include "implot.h"
 #include "rlImGui.h"
@@ -60,7 +59,7 @@
 
 #define TOTAL_SUBSTEPS 8
 
-#define TARGET_FPS 60.0
+#define TARGET_FPS 60
 
 #define TEMP_DT (1/TARGET_FPS)
 
@@ -177,7 +176,13 @@ void Custom_Plots_Init(ECS_Manager &world, struct custom_plot_config &custom_plo
         // Store Pointer to Buffers in Vector
         data_storage[it->entity_id] = f_buffer;
     }
+
+    rlImGuiSetup(true);
 }
+
+void Custom_Plots_Shutdown(){
+    rlImGuiShutdown(); // Not really needed, but included for 'completeness'
+};
 
 void Custom_Plots(ECS_Manager &world){
     
@@ -350,10 +355,7 @@ int main(){
     
     
     // Initialize Systems after known established entites are created
-    raylib::Color textColor(LIGHTGRAY);
-    raylib::Window w(SCREEN_WIDTH_IN_PIXELS, SCREEN_HEIGHT_IN_PIXELS, WINDOW_NAME);
-    
-    SetTargetFPS(TARGET_FPS); 
+     
      
     // ---- Init Systems ---- //
     struct constr_visual_config constr_visual_config = {
@@ -373,26 +375,22 @@ int main(){
     
     };
 
-    Custom_Plots_Init(my_world, custom_plot_config);
-    Constraint_Visualization_Init(constr_visual_config);
-    Particle_Visualization_Init(particle_visual_config);
-    Constraint_System_Init(my_world); 
-    
-    rlImGuiSetup(true);
+    struct render_config render_config = {
+        .screen_width_in_pixels  = SCREEN_HEIGHT_IN_PIXELS,
+        .screen_height_in_pixels = SCREEN_HEIGHT_IN_PIXELS,
+        .window_title            = WINDOW_NAME, 
+        .target_fps              = TARGET_FPS
+    };
 
     
-    // ---- Graphics System ---- //
-    // Pre-Graphics System
-    // - Intepretation Systems (e.g. Constraint Visualization)
-    // 
-    // Render(ers)
-    // - Texture Renderer / Draw Calls
-    //
-    // Dear ImGui GUI/Plots 
-    // Dear ImGui Draw Call(?) - This is done AFTER the ECS Renderer so it appears "overtop" the textures
-    //                           so it can be more like an "overlay"
+    Constraint_System_Init(my_world); 
+    Render_System_Init(my_world, render_config); 
+
+    Constraint_Visualization_Init(constr_visual_config);
+    Particle_Visualization_Init(particle_visual_config); 
+    Custom_Plots_Init(my_world, custom_plot_config); 
     
-    // Done @ Init
+    
     // Move the Constraint World Coord. so it can be seen 
     Render_System_add_pre_render(Constraint_Visualization_System); 
     // Converts Physical Coordinates to something the Render_System can use (Screen Coords) 
@@ -400,10 +398,7 @@ int main(){
     
     //DearImGui GUI
     Render_System_add_post_render(Custom_Plots);
-    
-    //Render_System_add_post_render(<Whacky_Overlays?>); 
-
-    while (!w.ShouldClose()) // Detect window close button or ESC key
+    while (!Render_System_WindowShouldClose()) // Detect window close button or ESC key
     {
         for (int i = 0; i < 100; i ++){
             Gravity_System(my_world); 
@@ -412,18 +407,13 @@ int main(){
             
         }
         
-        BeginDrawing();
-        ClearBackground(BLACK);
-        
         Render_System(my_world);
         
-         
-
-        EndDrawing();
     }
-
-    rlImGuiShutdown();
- 
+    
+    Custom_Plots_Shutdown();
+    Render_System_Shutdown();  
+    
     return 0;
 }
 
