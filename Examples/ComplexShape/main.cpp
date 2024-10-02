@@ -9,7 +9,6 @@
 #include <math.h>
 #include <cmath>
 
-#include "raylib-cpp.hpp"
 #include "imgui.h"
 #include "implot.h"
 #include "rlImGui.h"
@@ -60,13 +59,19 @@
 
 #define TOTAL_SUBSTEPS 8
 
-#define TARGET_FPS 60.0
+#define TARGET_FPS 60
 
 #define TEMP_DT (1/TARGET_FPS)
 
 #define TWO_PI 6.2831853 // Only used for visualization modulo
 
 #define WINDOW_NAME "Complex Shape Visualization"
+
+struct GUI_Component {
+    
+    int entity_id;
+
+};
 
 void add_rigid_body_to_world(ECS_Manager &world, int entity_id, Eigen::Vector2d pos, double angle){
     
@@ -77,6 +82,8 @@ void add_rigid_body_to_world(ECS_Manager &world, int entity_id, Eigen::Vector2d 
     Render_Component render_val           = {entity_id, "./misc/black_square.png",
                                                         SCREEN_WIDTH_IN_PIXELS/2, SCREEN_HEIGHT_IN_PIXELS/2, 
                                                         50, 200}; // x, y, h, w; 
+    GUI_Component      gui_flag           = {entity_id}; 
+    
     ODE_Component ode_val                 = {entity_id, INT_METHOD::RK4}; 
     Force_Component force_val             = {entity_id, Eigen::Vector2d(0.0, 0.0)};
     Mass_Component mass_val               = {entity_id, 1.0}; 
@@ -89,6 +96,7 @@ void add_rigid_body_to_world(ECS_Manager &world, int entity_id, Eigen::Vector2d 
     world.add_component<Position_Component>(particle_pos);
     world.add_component<Velocity_Component>(particle_vel);
     world.add_component<Render_Component>(render_val);
+    world.add_component<GUI_Component>(gui_flag); 
     world.add_component<Rotation_Component>(rot_val); 
     world.add_component<ODE_Component>(ode_val);
     world.add_component<Force_Component>(force_val); 
@@ -146,17 +154,41 @@ void add_rel_constr(ECS_Manager &world,
 
 }
 static float x[180];
-static float y[180];
-static float y2[180];
 
 static float t = 0;
 static int   i = 0;
 
-void custom_plots(ECS_Manager &world, int rb1_id, int rb2_id){
+// ---- Custom Plot Related ---- //
+static std::map<int, float*> data_storage;
+
+struct custom_plot_config {
+
+};
+
+void Custom_Plots_Init(ECS_Manager &world, struct custom_plot_config &custom_plot_config){
+    
+    for (auto it = world.get_component_begin<GUI_Component>();
+              it < world.get_component_end<GUI_Component>(); it++){
+         
+        // Allocate Memory for a buffer
+        float *f_buffer = new float[256];
+        
+        // Store Pointer to Buffers in Vector
+        data_storage[it->entity_id] = f_buffer;
+    }
+
+    rlImGuiSetup(true);
+}
+
+void Custom_Plots_Shutdown(){
+    rlImGuiShutdown(); // Not really needed, but included for 'completeness'
+};
+
+void Custom_Plots(ECS_Manager &world){
+    
     rlImGuiBegin();
     ImPlot::CreateContext();
 
-    
     bool open = true;
     bool* p_open = &open;
     
@@ -172,63 +204,50 @@ void custom_plots(ECS_Manager &world, int rb1_id, int rb2_id){
     ImGui::Begin("Joint Angles", p_open); 
     
     t += ImGui::GetIO().DeltaTime;
-    
-    Rotation_Component* rot_comp_ptr1 = world.get_component<Rotation_Component>(rb1_id);
-    Rotation_Component* rot_comp_ptr2 = world.get_component<Rotation_Component>(rb2_id);
-    
     i++; 
-    x[i%180] = std::fmod(i * 1.0/TARGET_FPS, 3.0); 
-    y[i%180]  = (180.0/3.14159)*rot_comp_ptr1->angle;  
-    
-    float v = rot_comp_ptr2->angle;
-    while (v >= M_PI) v -= TWO_PI;
-    while (v < M_PI)  v += TWO_PI;  
-    y2[i%180] = (180.0/3.14159)*v - 360.0;
-    //y2[i%180] = (180.0/3.14159)*rot_comp_ptr2->angle - 360.0; 
     
     if (ImPlot::BeginPlot("Line Plot")){
         ImPlot::SetupAxisLimits(ImAxis_X1,  0.0, 3.0); 
         ImPlot::SetupAxisLimits(ImAxis_Y1, -180, 180); 
-        ImPlot::SetupAxes("x", "y");
-        
-        ImPlot::PlotLine("Angle 1", x, y,  i%180, 0, 0, sizeof(float));
-        ImPlot::PlotLine("Angle 2", x, y2, i%180, 0, 0, sizeof(float)); 
+        ImPlot::SetupAxes("x", "y"); 
+
+        for (auto it = world.get_component_begin<GUI_Component>();
+              it < world.get_component_end<GUI_Component>(); it++){
+
+            int rb_id = it->entity_id;
+            
+            Rotation_Component* rot_comp_ptr = world.get_component<Rotation_Component>(rb_id);
+            
+             
+            x[i%180] = std::fmod(i * 1.0/TARGET_FPS, 3.0); 
+            
+            float v = rot_comp_ptr->angle;
+            while (v >= M_PI) v -= TWO_PI;
+            while (v < M_PI)  v += TWO_PI;
+
+            float *f_buffer = data_storage[it->entity_id];
+            
+            *(f_buffer +(i%180)) = (180.0/3.14159)*v - 360.0;
+            
+            ImPlot::PlotLine(("Angle " + std::to_string(it->entity_id)).c_str(), x, f_buffer,  i%180, 0, 0, sizeof(float));
+        }
         
         ImPlot::EndPlot();
-    }
+    } 
     
-    //ImPlot::ShowDemoWindow(); 
     ImPlot::DestroyContext();
     ImGui::End();
+    
     rlImGuiEnd();
+
 }
 
 
-int main() {
+int main(){
 
-    // Initialization
-    raylib::Color textColor(LIGHTGRAY);
-    raylib::Window w(SCREEN_WIDTH_IN_PIXELS, SCREEN_HEIGHT_IN_PIXELS, WINDOW_NAME);
+    ECS_Manager my_world; 
     
-    SetTargetFPS(TARGET_FPS); 
-     
-    ECS_Manager my_world;
-
-    // ---- Init Systems ---- //
-    struct constr_visual_config constr_visual_config1 = {
-        .screen_width_in_pixels  = SCREEN_WIDTH_IN_PIXELS,
-        .screen_height_in_pixels = SCREEN_HEIGHT_IN_PIXELS,
-        .screen_width_in_meters  = SCREEN_WIDTH_METERS,
-        .screen_height_in_meters = SCREEN_HEIGHT_METERS
-    };
-    struct particle_visual_config particle_visual_config1 = {
-        .screen_width_in_pixels  = SCREEN_WIDTH_IN_PIXELS,
-        .screen_height_in_pixels = SCREEN_HEIGHT_IN_PIXELS,
-        .screen_width_in_meters  = SCREEN_WIDTH_METERS,
-        .screen_height_in_meters = SCREEN_HEIGHT_METERS
-    };
-     
-    
+    my_world.register_component<GUI_Component>(); 
     my_world.register_component<Render_Component>();
     my_world.register_component<Position_Component>();
     my_world.register_component<Velocity_Component>(); 
@@ -321,7 +340,6 @@ int main() {
     rel_constr_id = entity_id;
     add_rel_constr(my_world, rel_constr_id, rb3_id, rb4_id,
                     Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0));
-     
 
     // Relative Position Constraint #4
     entity_id++;
@@ -335,15 +353,52 @@ int main() {
     add_rel_constr(my_world, rel_constr_id, rb2_id, rb5_id,
                     Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, -1.414213), Eigen::Vector2d(2.0, -2.0));
     
-    // Initialize Systems after known established entites are created
-    Constraint_Visualization_Init(constr_visual_config1);
-    Particle_Visualization_Init(particle_visual_config1);
-    Constraint_System_Init(my_world); 
     
-    rlImGuiSetup(true);
+    // Initialize Systems after known established entites are created
+     
+     
+    // ---- Init Systems ---- //
+    struct constr_visual_config constr_visual_config = {
+        .screen_width_in_pixels  = SCREEN_WIDTH_IN_PIXELS,
+        .screen_height_in_pixels = SCREEN_HEIGHT_IN_PIXELS,
+        .screen_width_in_meters  = SCREEN_WIDTH_METERS,
+        .screen_height_in_meters = SCREEN_HEIGHT_METERS
+    };
+    struct particle_visual_config particle_visual_config = {
+        .screen_width_in_pixels  = SCREEN_WIDTH_IN_PIXELS,
+        .screen_height_in_pixels = SCREEN_HEIGHT_IN_PIXELS,
+        .screen_width_in_meters  = SCREEN_WIDTH_METERS,
+        .screen_height_in_meters = SCREEN_HEIGHT_METERS
+    }; 
+    
+    struct custom_plot_config custom_plot_config = {
+    
+    };
+
+    struct render_config render_config = {
+        .screen_width_in_pixels  = SCREEN_HEIGHT_IN_PIXELS,
+        .screen_height_in_pixels = SCREEN_HEIGHT_IN_PIXELS,
+        .window_title            = WINDOW_NAME, 
+        .target_fps              = TARGET_FPS
+    };
 
     
-    while (!w.ShouldClose()) // Detect window close button or ESC key
+    Constraint_System_Init(my_world); 
+    Render_System_Init(my_world, render_config); 
+
+    Constraint_Visualization_Init(constr_visual_config);
+    Particle_Visualization_Init(particle_visual_config); 
+    Custom_Plots_Init(my_world, custom_plot_config); 
+    
+    
+    // Move the Constraint World Coord. so it can be seen 
+    Render_System_add_pre_render(Constraint_Visualization_System); 
+    // Converts Physical Coordinates to something the Render_System can use (Screen Coords) 
+    Render_System_add_pre_render(Particle_Visualization_System);
+    
+    //DearImGui GUI
+    Render_System_add_post_render(Custom_Plots);
+    while (!Render_System_WindowShouldClose()) // Detect window close button or ESC key
     {
         for (int i = 0; i < 100; i ++){
             Gravity_System(my_world); 
@@ -351,24 +406,14 @@ int main() {
             Newtonian_System(my_world, GetFrameTime()/100);
             
         }
-        // Move the Constraint World Coord. so it can be seen
-        Constraint_Visualization_System(my_world);
-
-        // Converts Physical Coordinates to something the Render_System can use (Screen Coords)
-        Particle_Visualization_System(my_world);
-
-
-        BeginDrawing();
-        ClearBackground(BLACK);
         
         Render_System(my_world);
-        custom_plots(my_world, rb1_id, rb2_id); 
-
-        EndDrawing();
+        
     }
-
-    rlImGuiShutdown();
- 
+    
+    Custom_Plots_Shutdown();
+    Render_System_Shutdown();  
+    
     return 0;
 }
 
