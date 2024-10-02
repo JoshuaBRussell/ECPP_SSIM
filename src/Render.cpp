@@ -1,20 +1,13 @@
 #include "Render.hpp"
 
-#include <iomanip>
-#include <iostream>
 #include <map>
 #include <assert.h>
 
-#include "AudioDevice.hpp"
 #include "ECS.hpp"
 #include "ECSManager.hpp"
 
-#include "./components/Motion_comp.hpp"
 #include "./components/Render_comp.hpp"
-#include "./components/Position_comp.hpp"
-#include "./components/Collision_comp.hpp"
 #include "./components/Rotation_comp.hpp"
-
 
 #include "raylib-cpp.hpp"
 #include "raylib.h"
@@ -30,7 +23,6 @@ static ssize_t post_render_systems_count = 0;
 static std::map<std::string, raylib::Texture2D*> texture_repo;
 
 void Render_System_Init(ECS_Manager &world, struct render_config &render_config){
-    std::cout << "HERE\n" << std::endl;  
     raylib::Color textColor(LIGHTGRAY);
     InitWindow(render_config.screen_width_in_pixels, render_config.screen_height_in_pixels, render_config.window_title.c_str()); 
     SetTargetFPS(render_config.target_fps);

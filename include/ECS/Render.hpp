@@ -5,13 +5,13 @@
 
 
 // ---- Graphics System ---- //
-    // Pre-Graphics System
-    // - Intepretation Systems (e.g. Constraint Visualization)
-    // 
-    // Render(ers)
-    // - Texture Renderer / Draw Calls
-    //
-    // Dear ImGui GUI/Plots
+// Pre-Graphics System
+// - Intepretation Systems (e.g. Constraint Visualization)
+// 
+// Render(ers)
+// - Texture Renderer / Draw Calls
+//
+// Dear ImGui GUI/Plots
 
 struct render_config {
     
