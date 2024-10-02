@@ -111,7 +111,9 @@ void Render_System(ECS_Manager &world){
                                    des_height, des_width);
         
         //origin is relative to dest_rec
-        raylib::Vector2 origin = {des_height/2, des_width/2};
+        float x = static_cast<float>(des_height)/2.0;
+        float y = static_cast<float>(des_width)/2.0;
+        raylib::Vector2 origin = {x, y}; // The intermediate variables are used to avoid a 'narrowing conversion' from 'int' to 'float' error.
         double rotation = (180.0/3.14159)*world.get_component<Rotation_Component>(it->entity_id)->angle;
         texture_ptr->Draw(src_rec, dest_rec, origin, -1*rotation); // Raylib has positive angles going
                                                                    // CW - I prefer the CCW - the way God intended.
