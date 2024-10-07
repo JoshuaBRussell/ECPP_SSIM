@@ -3,5 +3,6 @@
 #include "ECSManager.hpp"
 
 void Constraint_System_Init(ECS_Manager &world);
+void Constraint_System_ReInit(ECS_Manager &world);
 
 void Constraint_System(ECS_Manager &world);

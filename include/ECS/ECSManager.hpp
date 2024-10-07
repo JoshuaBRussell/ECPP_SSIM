@@ -94,6 +94,12 @@ class ECS_Manager{
 
         return id_candidate;
     }
+    
+    void destroy_entity(int entity_id){
+        for (auto it = this->T_to_comp_storage_Map.begin(); it != this->T_to_comp_storage_Map.end(); it++){
+            it->second->delete_component(entity_id);
+        }
+    }
 
   private:
 

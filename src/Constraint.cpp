@@ -128,6 +128,57 @@ void Constraint_System_Init(ECS_Manager &world){
     std::cout << "J cols: " << ENTITY_DIM*entity_count << std::endl;
 }
 
+void Constraint_System_ReInit(ECS_Manager &world){
+    
+    constr_entities.clear();
+    constrs_vec.clear();
+    constrs_eval.clear();
+
+    size_t constr_count = 0;
+    // Go through all the currently list constraints to find the number of entities
+    // involved.
+    for (auto it = world.get_component_begin<Fixed_Rot_Component>(); 
+              it < world.get_component_end<Fixed_Rot_Component>(); it++){
+        add_id_if_unique(&constr_entities, it->constr_entity);
+        constr_count +=1;
+    }
+    
+    for (auto it = world.get_component_begin<Relative_Rot_Component>(); 
+              it < world.get_component_end<Relative_Rot_Component>(); it++){
+        add_id_if_unique(&constr_entities, it->constr_entity1); 
+        add_id_if_unique(&constr_entities, it->constr_entity2); 
+        constr_count+=1; 
+    } 
+    
+    size_t entity_count = constr_entities.size();
+    
+    // Set total size of matrices
+    J.resize(CONSTR_DIM*constr_count, ENTITY_DIM*entity_count);
+    J_dot.resize(CONSTR_DIM*constr_count, ENTITY_DIM*entity_count); 
+    // Reserve memory for non-zero elements 
+    
+    J.reserve(Eigen::VectorXd::Constant(ENTITY_DIM*entity_count, 4));
+    J_dot.reserve(Eigen::VectorXd::Constant(ENTITY_DIM*entity_count, 4));
+
+    // Only happenstance in this particular example
+    M.resize(ENTITY_DIM*entity_count, ENTITY_DIM*entity_count);
+    W.resize(ENTITY_DIM*entity_count, ENTITY_DIM*entity_count);
+    M.setIdentity();
+    W.setIdentity();
+
+    q_dot.resize(ENTITY_DIM*entity_count, 1);
+    Q.resize(ENTITY_DIM*entity_count, 1);
+    C.resize(CONSTR_DIM*constr_count, 1);
+
+    x.resize(CONSTR_DIM*constr_count);
+    x.setZero();
+    
+    std::cout << "Constr Count: " << constr_count << std::endl;
+    std::cout << "Entity Count: " << constr_count << std::endl;
+    std::cout << "J rows: " << CONSTR_DIM*constr_count << std::endl;
+    std::cout << "J cols: " << ENTITY_DIM*entity_count << std::endl;
+}
+
 void Constraint_System(ECS_Manager &world){
     
     // Clear these at the beginning to be sure they are empty
