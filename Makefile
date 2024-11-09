@@ -229,3 +229,10 @@ complex_shape: $(objects) libimgui_rl_backend.a libraylib.a complex_shape_main.o
 
 complex_shape_main.o:
 	$(CXX) -c $(compileFlags) Examples/ComplexShape/main.cpp -o bin/complex_shape_main.o
+
+# Link the program and create the executable
+delete_complex_shape: $(objects) libimgui_rl_backend.a libraylib.a delete_complex_shape_main.o
+	$(CXX) $(objects) $(imgui_objects) bin/delete_complex_shape_main.o -o $(target) $(linkFlags)
+
+delete_complex_shape_main.o:
+	$(CXX) -c $(compileFlags) Examples/DeleteComplexShape/main.cpp -o bin/delete_complex_shape_main.o
