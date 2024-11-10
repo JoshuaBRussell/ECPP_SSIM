@@ -12,7 +12,7 @@ class VComponentStorage {
   
   public:
       virtual ~VComponentStorage() = default;
-      virtual void delete_component(int entity_id) = 0;
+      virtual bool delete_component(int entity_id) = 0;
 };
 
 template <typename T>
@@ -40,8 +40,11 @@ class ComponentStorage : public VComponentStorage{
 
         return return_result;
     }
-
-    void delete_component(int entity_id) override {
+    
+    // In the event that a component was found and subsequently deleted, this returns true
+    bool delete_component(int entity_id) override {
+        
+        bool comp_deleted = false; 
         
         // If it even exist
         auto it = this->id_to_index_map.find(entity_id);
@@ -68,8 +71,11 @@ class ComponentStorage : public VComponentStorage{
             this->storage_container_count--;
             
             this->id_to_index_map.erase(it);
-        }
         
+            comp_deleted = true;
+        }
+       
+        return comp_deleted;
     }
 
     size_t get_component_count(){
