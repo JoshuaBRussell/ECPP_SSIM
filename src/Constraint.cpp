@@ -79,7 +79,11 @@ void Constraint_System_Init(ECS_Manager &world){
     // doesn't crash in the instance that the user doesn't register the components
     world.register_component<Fixed_Rot_Component>();
     world.register_component<Linear_Component>();
-    world.register_component<Relative_Rot_Component>(); 
+    world.register_component<Relative_Rot_Component>();
+
+    world.augmentation_callback<Fixed_Rot_Component>(Constraint_System_ReInit);
+    world.augmentation_callback<Linear_Component>(Constraint_System_ReInit);
+    world.augmentation_callback<Relative_Rot_Component>(Constraint_System_ReInit);
     
     has_been_init = true;
     

@@ -413,7 +413,6 @@ int main(){
         delete_countdown--; 
         if (delete_countdown == 0){
             my_world.destroy_entity(rel_constr_id);
-            Constraint_System_ReInit(my_world);
         }
          
     }
