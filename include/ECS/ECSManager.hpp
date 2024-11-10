@@ -2,6 +2,7 @@
 
 #include <string>
 #include <typeinfo>
+#include <vector>
 #include <map>
 #include <set>
 #include <cassert>
@@ -97,13 +98,56 @@ class ECS_Manager{
     
     void destroy_entity(int entity_id){
         for (auto it = this->T_to_comp_storage_Map.begin(); it != this->T_to_comp_storage_Map.end(); it++){
-            it->second->delete_component(entity_id);
+            // Check to see if a deletion occurs. Since there isn't a cache of what entity has what component (intentionally),
+            // this lets us know if there was a component deleted that was assigned to an entity
+            
+            if(it->second->delete_component(entity_id)){
+                
+                auto search_result = this->comp_to_sys_comp_change_callbacks.find(it->first); 
+                if (search_result != this->comp_to_sys_comp_change_callbacks.end()){
+                    // Rather than invoking the system callback every time a component is deleted that the system 
+                    // is interested in, note that it was invoked and defer calling it until the end of the 
+                    // function. This is to avoid multiple calls to potentially expensive callbacks.
+                    //
+                    // This also ensures all components for an entity are deleted before a callback potentially 
+                    // uses that entity with missing components - before it is completely deleted.
+                    std::vector<void (*)(ECS_Manager&)> *v = this->comp_to_sys_comp_change_callbacks[it->first];
+                    for (auto cb_ptr = v->begin(); cb_ptr != v->end(); cb_ptr++){
+                        this->sys_comp_change_callbacks_set.insert(*cb_ptr); 
+                    }
+                }
+            }
         }
+
+        for (auto it = this->sys_comp_change_callbacks_set.begin(); it != this->sys_comp_change_callbacks_set.end(); it++){
+            (**it)(*this);
+        }
+    }
+    
+    template <typename T>
+    void augmentation_callback(void (*sys_callback)(ECS_Manager &world)){
+        
+        const char *type_name = typeid(T).name();
+        std::vector<void (*)(ECS_Manager&)> *v;
+        
+        auto search_result = this->comp_to_sys_comp_change_callbacks.find(type_name); 
+        if (search_result == this->comp_to_sys_comp_change_callbacks.end()){
+            v = new std::vector<void (*)(ECS_Manager &)>;
+        } else {
+            v = search_result->second; 
+        }
+
+        v->push_back(sys_callback);
+
+        this->comp_to_sys_comp_change_callbacks.insert({type_name, v});
+
     }
 
   private:
-
+    
     std::map<std::string, VComponentStorage*> T_to_comp_storage_Map;
     std::set<int> id_container; 
+    std::map<std::string, std::vector<void (*)(ECS_Manager &)>*> comp_to_sys_comp_change_callbacks; 
+    std::set<void (*)(ECS_Manager &)> sys_comp_change_callbacks_set;
 
 };
