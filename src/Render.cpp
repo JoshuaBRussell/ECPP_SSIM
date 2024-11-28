@@ -116,3 +116,13 @@ void Render_System(ECS_Manager &world){
     EndDrawing();
 
 }
+
+
+// ---- Input System ---- //
+// Most of these will be simple wrapper around the current libs functions until (if ever) a different
+// input lib is used
+
+bool Render_IsMouseButtonPressed(int button){
+    return IsMouseButtonPressed(button);
+}
+

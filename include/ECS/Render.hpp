@@ -34,3 +34,16 @@ void Render_System_add_post_render(void (*sys)(ECS_Manager&));
 void Render_System_Exclusive(ECS_Manager &world);
 void Render_System_NonExclusive(ECS_Manager &world);
 void Render_System(ECS_Manager &world);
+
+// Let the Render System handle input events since it is easier
+typedef enum {
+    LEFT_MOUSE_BUTTON    = 0,
+    RIGHT_MOUSE_BUTTON   = 1,
+    MIDDLE_MOUSE_BUTTON  = 2,
+    SIDE_MOUSE_BUTTON    = 3,
+    EXTRA_MOUSE_BUTTON   = 4,
+    FORWARD_MOUSE_BUTTON = 5,
+    BACK_MOUSE_BUTTON    = 6,
+} RenderMouseButton;
+
+bool Render_IsMouseButtonPressed(int button);

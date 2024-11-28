@@ -385,7 +385,7 @@ int main(){
     
     //DearImGui GUI
     Render_System_add_post_render(Custom_Plots);
-    int delete_countdown = 500; 
+    
     while (!Render_System_WindowShouldClose()) // Detect window close button or ESC key
     {
         for (int i = 0; i < 100; i ++){
@@ -397,8 +397,7 @@ int main(){
         
         Render_System(my_world);
         
-        delete_countdown--; 
-        if (delete_countdown == 0){
+        if (Render_IsMouseButtonPressed(LEFT_MOUSE_BUTTON)){
             my_world.destroy_entity(rel_constr_id);
         }
          
