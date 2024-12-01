@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <map>
+#include <iostream>
 #include <unordered_map>
 #include <array>
 #include <assert.h>
@@ -40,12 +41,31 @@ class ComponentStorage : public VComponentStorage{
 
         return return_result;
     }
+
+    void print_storage(){
+        std::cout << "{ ";
+        
+        // I think type issues were making it so if storage_container_count == 0, it was causing it to 
+        // to always appear as less than 0 - so it just kept looping.
+        // I don't feel like figuring this out properly right now, so I am placing a conditional. 
+        if (this->storage_container_count != 0){
+            for (size_t i = 0; i < this->storage_container_count - 1; i ++){
+                std::cout << "[" << i << "] : " << this->storage_container[i].entity_id << ", ";
+            }
+        }
+        
+        if (this->storage_container_count > 1){
+            size_t last_index = this->storage_container_count - 1;
+            std::cout << "[" << last_index << "] : " << this->storage_container[last_index].entity_id;
+        }
+
+        std::cout << "}" << std::endl;
+    }
     
     // In the event that a component was found and subsequently deleted, this returns true
     bool delete_component(int entity_id) override {
         
         bool comp_deleted = false; 
-        
         // If it even exist
         auto it = this->id_to_index_map.find(entity_id);
         if( it != this->id_to_index_map.end()){
@@ -53,9 +73,11 @@ class ComponentStorage : public VComponentStorage{
             // Take Last Component And Overwrite Deleted One If There is More Than One
             // This keeps things contiguous
             if (this->storage_container_count > 1){
+                
                 // Find the ID mapped to the last element in the list
                 //TODO: This is a slow way to find this
-                int last_element_id = -1; 
+                int last_element_id = -1;
+                
                 for (auto it = this->id_to_index_map.begin(); it != this->id_to_index_map.end(); it++){
                     if (it->second == this->storage_container_count-1){
                         last_element_id = it->first;
@@ -63,13 +85,15 @@ class ComponentStorage : public VComponentStorage{
                     }
                 }
                 assert(last_element_id != -1);
-
+                
+                // Move the last element to the deleted items location
                 this->storage_container[it->second] = this->storage_container[this->storage_container_count-1];
-                this->id_to_index_map.insert({last_element_id, it->second});   
+                this->id_to_index_map[last_element_id] =  it->second; // The last element is known to already exist at this time,
+                                                                      // so this shouldn't accidently create anything new
             }
 
             this->storage_container_count--;
-            
+            this->print_storage();    
             this->id_to_index_map.erase(it);
         
             comp_deleted = true;
