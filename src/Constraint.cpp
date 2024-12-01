@@ -72,6 +72,37 @@ static Eigen::VectorXd Q;
 static Eigen::VectorXd C;
 static Eigen::VectorXd x;
 
+static std::set<int> get_entity_refs(int entity_id, ECS_Manager &world){
+    // If an entity was rigid body entity was deleted, there may be constraints referring to it still.
+    // Rather than letting this constraint entity exist, and have "dangling" entity references existing, 
+    // and also checking for its referenced entity's existence on each loop, just go ahead and delete it.
+    
+    // This will cause the ReInit system to get called more times than needed (once for the initial rigid body
+    // deletion and again after this - now dangling component reference is deleted). Possible performance issue?
+    
+    std::set<int> entities_to_delete; 
+
+    for (auto it = world.get_component_begin<Fixed_Rot_Component>(); 
+              it < world.get_component_end<Fixed_Rot_Component>(); it++){
+        if(entity_id == it->constr_entity){
+            std::cout << "FIXED_ROT: " << it->entity_id << " CONSTR: " << it->constr_entity << "\n";
+            entities_to_delete.insert(it->entity_id);
+        }
+    }
+    
+    for (auto it = world.get_component_begin<Relative_Rot_Component>(); 
+              it < world.get_component_end<Relative_Rot_Component>(); it++){
+        std::cout << "REL_ROT: " << it->entity_id << " CONSTR1: " << it->constr_entity1 << "\n"; 
+        std::cout << "REL_ROT: " << it->entity_id << " CONSTR2: " << it->constr_entity2 << "\n"; 
+
+        if(entity_id == it->constr_entity1  || entity_id == it->constr_entity2){
+            entities_to_delete.insert(it->entity_id); 
+        }
+    }
+
+    return entities_to_delete;
+}
+
 
 void Constraint_System_Init(ECS_Manager &world){
     
@@ -84,7 +115,10 @@ void Constraint_System_Init(ECS_Manager &world){
     world.augmentation_callback<Fixed_Rot_Component>(Constraint_System_ReInit);
     world.augmentation_callback<Linear_Component>(Constraint_System_ReInit);
     world.augmentation_callback<Relative_Rot_Component>(Constraint_System_ReInit);
+    world.augmentation_callback<Position_Component>(Constraint_System_ReInit); 
     
+    world.set_entity_refs_callbacks(get_entity_refs);
+
     has_been_init = true;
     
     size_t constr_count = 0;
@@ -133,16 +167,17 @@ void Constraint_System_Init(ECS_Manager &world){
 }
 
 void Constraint_System_ReInit(ECS_Manager &world){
-    
+    std::cout << "ReInit was called" << std::endl; 
     constr_entities.clear();
     constrs_vec.clear();
-    constrs_eval.clear();
-
+    constrs_eval.clear(); 
+    
     size_t constr_count = 0;
     // Go through all the currently list constraints to find the number of entities
     // involved.
     for (auto it = world.get_component_begin<Fixed_Rot_Component>(); 
               it < world.get_component_end<Fixed_Rot_Component>(); it++){
+        
         add_id_if_unique(&constr_entities, it->constr_entity);
         constr_count +=1;
     }
