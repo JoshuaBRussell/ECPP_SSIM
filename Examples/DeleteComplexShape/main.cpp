@@ -268,9 +268,8 @@ int main(){
     my_world.register_component<Relative_Rot_Component>(); // This isn't actually needed for this example
                                                            // but the program crashes if the component 
                                                            // isn't registered
-    int entity_id = 1;
     // Create the Background
-    int bg_id = entity_id;
+    int bg_id = my_world.create_entity();
     Render_Component bg_render_comp      =  {bg_id, "./misc/background_w_grid.png",
                                               SCREEN_WIDTH_IN_PIXELS/2, SCREEN_HEIGHT_IN_PIXELS/2, 
                                               SCREEN_HEIGHT_IN_PIXELS , SCREEN_WIDTH_IN_PIXELS}; // x, y, h, w;
@@ -285,71 +284,59 @@ int main(){
     int rb5_id = -1;
 
     // First Rigid Body
-    entity_id++;
-    rb1_id = entity_id;
+    rb1_id = my_world.create_entity();
     add_rigid_body_to_world(my_world, rb1_id, Eigen::Vector2d(1.0, 0.0), 1.5707);
     
     // Second Rigid Body
-    entity_id++;
-    rb2_id = entity_id; 
+    rb2_id = my_world.create_entity(); 
     add_rigid_body_to_world(my_world, rb2_id, Eigen::Vector2d(2.0, -1.0), 0.0); 
     
     // Third Rigid Body
-    entity_id++;
-    rb3_id = entity_id; 
+    rb3_id = my_world.create_entity(); 
     add_rigid_body_to_world(my_world, rb3_id, Eigen::Vector2d(1.0, -2.0), 1.5707); 
 
     // Fourth Rigid Body
-    entity_id++;
-    rb4_id = entity_id; 
+    rb4_id = my_world.create_entity(); 
     add_rigid_body_to_world(my_world, rb4_id, Eigen::Vector2d(0.0, -1.0), 0.0); 
 
     // Fifth Rigid Body
-    entity_id++;
-    rb5_id = entity_id; 
+    rb5_id = my_world.create_entity(); 
     add_rigid_body_to_world(my_world, rb5_id, Eigen::Vector2d(1.0, -1.0), 0.785397); 
 
     // Fixed Position Constraint #1
-    entity_id++;
-    int fixed_constr_id = entity_id;
+    int fixed_constr_id = my_world.create_entity();
     add_fixed_pos_constr(my_world, 
                          fixed_constr_id, rb1_id, 
                          Eigen::Vector2d(0.0, 0.0), Eigen::Vector2d(0.0, 1.0)); 
     
     // Fixed Position Constraint #2 
-    entity_id++;
-    fixed_constr_id = entity_id;
+    fixed_constr_id = my_world.create_entity();
     add_fixed_pos_constr(my_world, 
                          fixed_constr_id, rb4_id, 
                          Eigen::Vector2d(0.0, 0.0), Eigen::Vector2d(0.0, 1.0)); 
     
     // Relative Position Constraint #1
-    entity_id++;
-    int rel_constr_id = entity_id;
+    int rel_constr_id = my_world.create_entity();
     add_rel_constr(my_world, rel_constr_id, rb1_id, rb2_id,
                     Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, 1.0));
      
     // Relative Position Constraint #2
-    entity_id++;
-    rel_constr_id = entity_id;
+    rel_constr_id = my_world.create_entity();
     add_rel_constr(my_world, rel_constr_id, rb2_id, rb3_id,
                     Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0));
       
     // Relative Position Constraint #3
-    entity_id++;
-    rel_constr_id = entity_id;
+    rel_constr_id = my_world.create_entity();
     add_rel_constr(my_world, rel_constr_id, rb3_id, rb4_id,
                     Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0));
 
     // Relative Position Constraint #4
-    entity_id++;
-    rel_constr_id = entity_id;
+    rel_constr_id = my_world.create_entity();
     add_rel_constr(my_world, rel_constr_id, rb4_id, rb5_id,
                     Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, 1.414213), Eigen::Vector2d(0.0, 0.0));
       
     // Relative Position Constraint #5
-    entity_id++;
-    rel_constr_id = entity_id;
+    rel_constr_id = my_world.create_entity();
     add_rel_constr(my_world, rel_constr_id, rb2_id, rb5_id,
                     Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, -1.414213), Eigen::Vector2d(2.0, -2.0));
     

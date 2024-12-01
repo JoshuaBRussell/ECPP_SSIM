@@ -7,7 +7,7 @@
 #include <set>
 #include <cassert>
 #include <iostream>
-
+#include <algorithm>
 #include "ComponentStorage.hpp"
 
 class ECS_Manager{
@@ -95,16 +95,33 @@ class ECS_Manager{
 
         return id_candidate;
     }
-    
-    void destroy_entity(int entity_id){
+
+    std::set<int> get_entity_refs(int entity_id){
+        std::set<int> entity_refs;
+        for (auto it = this->entity_refs_callbacks.begin(); it != this->entity_refs_callbacks.end(); it++){
+            std::set<int> d = (**it)(entity_id, *this);
+            std::merge(entity_refs.begin(), entity_refs.end(), d.begin(),
+            d.end(), inserter(entity_refs, entity_refs.begin()));
+        }
+
+        return entity_refs;
+    }
+
+    void delete_entity(int entity_id){
+        
+        std::cout << "Deleting: " << entity_id << "\n"; 
+        
         for (auto it = this->T_to_comp_storage_Map.begin(); it != this->T_to_comp_storage_Map.end(); it++){
             // Check to see if a deletion occurs. Since there isn't a cache of what entity has what component (intentionally),
             // this lets us know if there was a component deleted that was assigned to an entity
             
+             
             if(it->second->delete_component(entity_id)){
-                
+
+                std::cout << "Checking E of Comp: " << it->first << std::endl; 
                 auto search_result = this->comp_to_sys_comp_change_callbacks.find(it->first); 
-                if (search_result != this->comp_to_sys_comp_change_callbacks.end()){
+                if (search_result != this->comp_to_sys_comp_change_callbacks.end()){ 
+                    std::cout << "Component " << it->first << " has a callback.\n"; 
                     // Rather than invoking the system callback every time a component is deleted that the system 
                     // is interested in, note that it was invoked and defer calling it until the end of the 
                     // function. This is to avoid multiple calls to potentially expensive callbacks.
@@ -116,12 +133,35 @@ class ECS_Manager{
                         this->sys_comp_change_callbacks_set.insert(*cb_ptr); 
                     }
                 }
-            }
+            } 
+
+        }
+
+        this->id_container.erase(entity_id); 
+        
+    }
+    
+    void destroy_entity(int entity_id){ 
+        
+
+        // TODO: This probably doesn't handle certain entity reference trees very well.
+        // Think about this more
+        std::set<int> e = this->get_entity_refs(entity_id); 
+        this->delete_entity(entity_id);
+
+        for (auto it = e.begin(); it  != e.end(); it++){
+            this->delete_entity(*it);
         }
 
         for (auto it = this->sys_comp_change_callbacks_set.begin(); it != this->sys_comp_change_callbacks_set.end(); it++){
             (**it)(*this);
         }
+
+        this->sys_comp_change_callbacks_set.clear();        
+    }
+
+    bool does_entity_exist(int entity_id){
+        return this->id_container.find(entity_id) != this->id_container.end();
     }
     
     template <typename T>
@@ -143,11 +183,15 @@ class ECS_Manager{
 
     }
 
+    void set_entity_refs_callbacks(std::set<int> (*callback)(int entity_id, ECS_Manager &world)){
+        this->entity_refs_callbacks.insert(callback); 
+    }
+
   private:
     
     std::map<std::string, VComponentStorage*> T_to_comp_storage_Map;
-    std::set<int> id_container; 
-    std::map<std::string, std::vector<void (*)(ECS_Manager &)>*> comp_to_sys_comp_change_callbacks; 
+    std::set<int> id_container;
     std::set<void (*)(ECS_Manager &)> sys_comp_change_callbacks_set;
-
+    std::map<std::string, std::vector<void (*)(ECS_Manager &)>*> comp_to_sys_comp_change_callbacks; 
+    std::set<std::set<int> (*)(int entity_id, ECS_Manager &world)> entity_refs_callbacks;
 };
