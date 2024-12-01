@@ -396,9 +396,33 @@ int main(){
         }
         
         Render_System(my_world);
-        
+        // Convert Mouse Position to World Space
+        Eigen::Vector2d mouse_pos = Render_GetMousePosition();
+        Eigen::Vector2d mouse_pos_world = Eigen::Vector2d(screen2world_X(mouse_pos(0), SCREEN_WIDTH_METERS), 
+                                                          screen2world_Y(mouse_pos(1), SCREEN_HEIGHT_METERS));
+
+        // Find all entity's positions
+        double min_dist = 1000.0;
+        int min_dist_entity = -1;
+        for (auto it = my_world.get_component_begin<Position_Component>(); 
+              it < my_world.get_component_end<Position_Component>(); it++){
+            
+            double squared_dist = pow(mouse_pos_world(0) - it->position(0),2) + pow(mouse_pos_world(1) - it->position(1), 2);
+            
+            if (squared_dist < min_dist) {
+                min_dist = squared_dist;
+                min_dist_entity = it->entity_id;
+            }
+
+        }
+
+        std::cout << min_dist_entity << std::endl;
+            
+        // Find the closest entity - if there is even one within some range
+             
         if (Render_IsMouseButtonPressed(LEFT_MOUSE_BUTTON)){
-            my_world.destroy_entity(rel_constr_id);
+            std::cout << "Deleting Entity: " << min_dist_entity << std::endl;
+            my_world.destroy_entity(min_dist_entity);
         }
          
     }
