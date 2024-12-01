@@ -1,6 +1,7 @@
 #include "Render.hpp"
 
 #include <map>
+#include <Eigen/Core>
 #include <assert.h>
 
 #include "ECS.hpp"
@@ -116,6 +117,9 @@ void Render_System(ECS_Manager &world){
         double rotation = (180.0/3.14159)*world.get_component<Rotation_Component>(it->entity_id)->angle;
         texture_ptr->Draw(src_rec, dest_rec, origin, -1*rotation); // Raylib has positive angles going
                                                                    // CW - I prefer the CCW - the way God intended.
+        
+        DrawText(std::to_string(it->entity_id).c_str(), x_pos, y_pos, 12, GREEN); 
+
     }
 
     call_post_render_systems(world);
@@ -133,7 +137,11 @@ bool Render_IsMouseButtonPressed(int button){
     return IsMouseButtonPressed(button);
 }
 
-
+Eigen::Vector2d Render_GetMousePosition(){
+    Vector2 val = GetMousePosition(); // Use a intermediary value to avoid a depence on the lower level lib
+    // Just return a Eigen vector instead
+    return Eigen::Vector2d(val.x, val.y);
+}
 // ---- Util Functions ---- //
 
 // The idea was that the scale functions would just transform the (...)scale_X/Y functions
@@ -151,8 +159,12 @@ double screen2worldscale_Y(int screen_y, double screen_height_in_meters){
 };
 
 double screen2world_Y(int screen_y, double screen_height_in_meters){
-    return  -((double)screen_height_in_meters/screen_height_in_pixels) * (screen_y - screen_height_in_pixels);
+    return  -((double)screen_height_in_meters/screen_height_in_pixels) * (screen_y - screen_height_in_pixels) - screen_height_in_meters/2.0;
 };
+
+double screen2world_X(int screen_x, double screen_width_in_meters){
+    return screen2worldscale_X(screen_x, screen_width_in_meters) - screen_width_in_meters/2.0;
+}
 
 //Scale differences
 double world2screenscale_X(double x, double screen_width_in_meters){

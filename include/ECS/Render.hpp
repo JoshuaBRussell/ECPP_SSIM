@@ -3,6 +3,7 @@
 #include "ECS.hpp"
 #include "ECSManager.hpp"
 
+#include <Eigen/Core>
 
 // ---- Graphics System ---- //
 // Pre-Graphics System
@@ -47,7 +48,7 @@ typedef enum {
 } RenderMouseButton;
 
 bool Render_IsMouseButtonPressed(int button);
-
+Eigen::Vector2d Render_GetMousePosition();
 
 // ---- Util Functions ---- //
 
@@ -61,6 +62,7 @@ double screen2worldscale_X(int screen_x, double screen_width_in_meters);
 double screen2worldscale_Y(int screen_y, double screen_height_in_meters);
 
 double screen2world_Y(int screen_y, double screen_height_in_meters);
+double screen2world_X(int screen_x, double screen_width_in_meters);
 
 //Scale differences
 double world2screenscale_X(double x, double screen_width_in_meters);

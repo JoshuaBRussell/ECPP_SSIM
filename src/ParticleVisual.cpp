@@ -39,7 +39,8 @@ void Particle_Visualization_System(ECS_Manager &world){
         Eigen::Vector2d physical_pos = world.get_component<Position_Component>(it->entity_id)->position;
         
         world.get_component<Render_Component>(it->entity_id)->x = world2screen_X(physical_pos(0), screen_width_in_meters);
-        world.get_component<Render_Component>(it->entity_id)->y = world2screen_Y(physical_pos(1), screen_height_in_meters);
+        world.get_component<Render_Component>(it->entity_id)->y = world2screen_Y(physical_pos(1), screen_height_in_meters); 
+
     }
 }
 
