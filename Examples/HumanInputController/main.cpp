@@ -14,6 +14,8 @@
 
 #include "ECSManager.hpp"
 
+#include "Input.hpp"
+
 #include "Newtonian_Sys.hpp"
 #include "Gravity_Sys.hpp"
 #include "Render.hpp"
@@ -292,13 +294,14 @@ void add_complex_shape_to_world(ECS_Manager &world){
     
 }
 
+
 void Input_Interpreter_Sys(ECS_Manager &world){
     
 
-    if (Render_is_mouse_button_pressed(LEFT_MOUSE_BUTTON)){ 
+    if (Input_is_mouse_button_pressed(LEFT_MOUSE_BUTTON)){ 
         
         // Convert Mouse Position to World Space
-        Eigen::Vector2d mouse_pos = Render_get_mouse_position();
+        Eigen::Vector2d mouse_pos = Input_get_mouse_position();
         Eigen::Vector2d mouse_pos_world = Eigen::Vector2d(screen2world_X(mouse_pos(0), SCREEN_WIDTH_METERS), 
                                                           screen2world_Y(mouse_pos(1), SCREEN_HEIGHT_METERS));
         // Find the closest entity - if there is even one within some range
@@ -320,7 +323,7 @@ void Input_Interpreter_Sys(ECS_Manager &world){
         world.destroy_entity(min_dist_entity);
     }
 
-    if (Render_is_key_pressed(KEY_R)){
+    if (Input_is_key_pressed(KEY_R)){
             add_complex_shape_to_world(world);
             Constraint_System_ReInit(world);
     }
