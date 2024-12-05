@@ -93,7 +93,6 @@ class ComponentStorage : public VComponentStorage{
             }
 
             this->storage_container_count--;
-            this->print_storage();    
             this->id_to_index_map.erase(it);
         
             comp_deleted = true;
