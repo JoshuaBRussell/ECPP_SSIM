@@ -242,6 +242,106 @@ void Custom_Plots(ECS_Manager &world){
 
 }
 
+void add_complex_shape_to_world(ECS_Manager &world){
+    
+    int rb1_id = -1;
+    int rb2_id = -1;
+    int rb3_id = -1;
+    int rb4_id = -1;
+    int rb5_id = -1; 
+
+    // First Rigid Body
+    rb1_id = world.create_entity();
+    add_rigid_body_to_world(world, rb1_id, Eigen::Vector2d(1.0, 0.0), 1.5707);
+    
+    // Second Rigid Body
+    rb2_id = world.create_entity(); 
+    add_rigid_body_to_world(world, rb2_id, Eigen::Vector2d(2.0, -1.0), 0.0); 
+    
+    // Third Rigid Body
+    rb3_id = world.create_entity(); 
+    add_rigid_body_to_world(world, rb3_id, Eigen::Vector2d(1.0, -2.0), 1.5707); 
+
+    // Fourth Rigid Body
+    rb4_id = world.create_entity(); 
+    add_rigid_body_to_world(world, rb4_id, Eigen::Vector2d(0.0, -1.0), 0.0); 
+
+    // Fifth Rigid Body
+    rb5_id = world.create_entity(); 
+    add_rigid_body_to_world(world, rb5_id, Eigen::Vector2d(1.0, -1.0), 0.785397); 
+
+    // Fixed Position Constraint #1
+    int fixed_constr_id = world.create_entity();
+    add_fixed_pos_constr(world, 
+                         fixed_constr_id, rb1_id, 
+                         Eigen::Vector2d(0.0, 0.0), Eigen::Vector2d(0.0, 1.0)); 
+    
+    // Fixed Position Constraint #2 
+    fixed_constr_id = world.create_entity();
+    add_fixed_pos_constr(world, 
+                         fixed_constr_id, rb4_id, 
+                         Eigen::Vector2d(0.0, 0.0), Eigen::Vector2d(0.0, 1.0)); 
+    
+    // Relative Position Constraint #1
+    int rel_constr_id = world.create_entity();
+    add_rel_constr(world, rel_constr_id, rb1_id, rb2_id,
+                    Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, 1.0));
+     
+    // Relative Position Constraint #2
+    rel_constr_id = world.create_entity();
+    add_rel_constr(world, rel_constr_id, rb2_id, rb3_id,
+                    Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0));
+      
+    // Relative Position Constraint #3
+    rel_constr_id = world.create_entity();
+    add_rel_constr(world, rel_constr_id, rb3_id, rb4_id,
+                    Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0));
+
+    // Relative Position Constraint #4
+    rel_constr_id = world.create_entity();
+    add_rel_constr(world, rel_constr_id, rb4_id, rb5_id,
+                    Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, 1.414213), Eigen::Vector2d(0.0, 0.0));
+      
+    // Relative Position Constraint #5
+    rel_constr_id = world.create_entity();
+    add_rel_constr(world, rel_constr_id, rb2_id, rb5_id,
+                    Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, -1.414213), Eigen::Vector2d(2.0, -2.0));
+    
+}
+
+void Input_Interpreter_Sys(ECS_Manager &world){
+    
+
+    if (Render_is_mouse_button_pressed(LEFT_MOUSE_BUTTON)){ 
+        
+        // Convert Mouse Position to World Space
+        Eigen::Vector2d mouse_pos = Render_get_mouse_position();
+        Eigen::Vector2d mouse_pos_world = Eigen::Vector2d(screen2world_X(mouse_pos(0), SCREEN_WIDTH_METERS), 
+                                                          screen2world_Y(mouse_pos(1), SCREEN_HEIGHT_METERS));
+        // Find the closest entity - if there is even one within some range
+        // Find all entity's positions
+        double min_dist = 1000.0;
+        int min_dist_entity = -1;
+        for (auto it = world.get_component_begin<Position_Component>(); 
+              it < world.get_component_end<Position_Component>(); it++){
+            
+            double squared_dist = pow(mouse_pos_world(0) - it->position(0),2) + pow(mouse_pos_world(1) - it->position(1), 2);
+            
+            if (squared_dist < min_dist) {
+                min_dist = squared_dist;
+                min_dist_entity = it->entity_id;
+            }
+
+        }
+
+        world.destroy_entity(min_dist_entity);
+    }
+
+    if (Render_is_key_pressed(KEY_R)){
+            add_complex_shape_to_world(world);
+            Constraint_System_ReInit(world);
+    }
+}
 
 int main(){
 
@@ -277,72 +377,10 @@ int main(){
     my_world.add_component<Render_Component>(bg_render_comp);
     my_world.add_component<Rotation_Component>(bg_rot_comp); 
     
-    int rb1_id = -1;
-    int rb2_id = -1;
-    int rb3_id = -1;
-    int rb4_id = -1;
-    int rb5_id = -1;
-
-    // First Rigid Body
-    rb1_id = my_world.create_entity();
-    add_rigid_body_to_world(my_world, rb1_id, Eigen::Vector2d(1.0, 0.0), 1.5707);
-    
-    // Second Rigid Body
-    rb2_id = my_world.create_entity(); 
-    add_rigid_body_to_world(my_world, rb2_id, Eigen::Vector2d(2.0, -1.0), 0.0); 
-    
-    // Third Rigid Body
-    rb3_id = my_world.create_entity(); 
-    add_rigid_body_to_world(my_world, rb3_id, Eigen::Vector2d(1.0, -2.0), 1.5707); 
-
-    // Fourth Rigid Body
-    rb4_id = my_world.create_entity(); 
-    add_rigid_body_to_world(my_world, rb4_id, Eigen::Vector2d(0.0, -1.0), 0.0); 
-
-    // Fifth Rigid Body
-    rb5_id = my_world.create_entity(); 
-    add_rigid_body_to_world(my_world, rb5_id, Eigen::Vector2d(1.0, -1.0), 0.785397); 
-
-    // Fixed Position Constraint #1
-    int fixed_constr_id = my_world.create_entity();
-    add_fixed_pos_constr(my_world, 
-                         fixed_constr_id, rb1_id, 
-                         Eigen::Vector2d(0.0, 0.0), Eigen::Vector2d(0.0, 1.0)); 
-    
-    // Fixed Position Constraint #2 
-    fixed_constr_id = my_world.create_entity();
-    add_fixed_pos_constr(my_world, 
-                         fixed_constr_id, rb4_id, 
-                         Eigen::Vector2d(0.0, 0.0), Eigen::Vector2d(0.0, 1.0)); 
-    
-    // Relative Position Constraint #1
-    int rel_constr_id = my_world.create_entity();
-    add_rel_constr(my_world, rel_constr_id, rb1_id, rb2_id,
-                    Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, 1.0));
      
-    // Relative Position Constraint #2
-    rel_constr_id = my_world.create_entity();
-    add_rel_constr(my_world, rel_constr_id, rb2_id, rb3_id,
-                    Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0));
-      
-    // Relative Position Constraint #3
-    rel_constr_id = my_world.create_entity();
-    add_rel_constr(my_world, rel_constr_id, rb3_id, rb4_id,
-                    Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0));
+    add_complex_shape_to_world(my_world);
 
-    // Relative Position Constraint #4
-    rel_constr_id = my_world.create_entity();
-    add_rel_constr(my_world, rel_constr_id, rb4_id, rb5_id,
-                    Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, 1.414213), Eigen::Vector2d(0.0, 0.0));
-      
-    // Relative Position Constraint #5
-    rel_constr_id = my_world.create_entity();
-    add_rel_constr(my_world, rel_constr_id, rb2_id, rb5_id,
-                    Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, -1.414213), Eigen::Vector2d(2.0, -2.0));
-    
-    
-    // Initialize Systems after known established entites are created
-     
+    // Initialize Systems after known established entites are created  
      
     // ---- Init Systems ---- //
     struct constr_visual_config constr_visual_config = {
@@ -384,7 +422,7 @@ int main(){
     Render_System_add_pre_render(Particle_Visualization_System);
     
     //DearImGui GUI
-    Render_System_add_post_render(Custom_Plots);
+    //Render_System_add_post_render(Custom_Plots);
     
     while (!Render_System_WindowShouldClose()) // Detect window close button or ESC key
     {
@@ -395,35 +433,9 @@ int main(){
             
         }
         
-        Render_System(my_world);
-        // Convert Mouse Position to World Space
-        Eigen::Vector2d mouse_pos = Render_GetMousePosition();
-        Eigen::Vector2d mouse_pos_world = Eigen::Vector2d(screen2world_X(mouse_pos(0), SCREEN_WIDTH_METERS), 
-                                                          screen2world_Y(mouse_pos(1), SCREEN_HEIGHT_METERS));
-
-        // Find all entity's positions
-        double min_dist = 1000.0;
-        int min_dist_entity = -1;
-        for (auto it = my_world.get_component_begin<Position_Component>(); 
-              it < my_world.get_component_end<Position_Component>(); it++){
-            
-            double squared_dist = pow(mouse_pos_world(0) - it->position(0),2) + pow(mouse_pos_world(1) - it->position(1), 2);
-            
-            if (squared_dist < min_dist) {
-                min_dist = squared_dist;
-                min_dist_entity = it->entity_id;
-            }
-
-        }
-
-        std::cout << min_dist_entity << std::endl;
-            
-        // Find the closest entity - if there is even one within some range
+        Render_System(my_world); 
              
-        if (Render_IsMouseButtonPressed(LEFT_MOUSE_BUTTON)){
-            std::cout << "Deleting Entity: " << min_dist_entity << std::endl;
-            my_world.destroy_entity(min_dist_entity);
-        }
+        Input_Interpreter_Sys(my_world); 
          
     }
     
