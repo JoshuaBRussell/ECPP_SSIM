@@ -12,7 +12,7 @@ struct human_input_config {
 
 struct key_action_pair {
     InputKeyboardKey key_opt;
-    KeyboardKeyAction key_action;
+    ButtonAction key_action;
 
     ICommand *command;
 

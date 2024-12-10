@@ -94,17 +94,7 @@ typedef enum {
     RIGHT_ALT_KEY       = 346,  // Alt right
     RIGHT_SUPER_KEY     = 347,  // Super right
     KB_MENU_KEY         = 348,  // KB menu
-} InputKeyboardKey;
-
-typedef enum {
-    PRESSED = 0,
-    PRESSED_REPEAT = 1,
-    DOWN = 2,
-    RELEASED = 3,
-    UP = 4
-} KeyboardKeyAction; 
-
-
+} InputKeyboardKey; 
 
 typedef enum {
     LEFT_MOUSE_BUTTON    = 0,
@@ -115,6 +105,16 @@ typedef enum {
     FORWARD_MOUSE_BUTTON = 5,
     BACK_MOUSE_BUTTON    = 6,
 } InputMouseButton; 
+
+typedef enum {
+    PRESSED = 0,
+    PRESSED_REPEAT = 1,
+    DOWN = 2,
+    RELEASED = 3,
+    UP = 4
+} ButtonAction;
+
+
 
 bool Input_is_key_pressed(int key);
 bool Input_is_key_pressed_repeat(int key);
