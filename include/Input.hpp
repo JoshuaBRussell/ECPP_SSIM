@@ -97,6 +97,16 @@ typedef enum {
 } InputKeyboardKey;
 
 typedef enum {
+    PRESSED = 0,
+    PRESSED_REPEAT = 1,
+    DOWN = 2,
+    RELEASED = 3,
+    UP = 4
+} KeyboardKeyAction; 
+
+
+
+typedef enum {
     LEFT_MOUSE_BUTTON    = 0,
     RIGHT_MOUSE_BUTTON   = 1,
     MIDDLE_MOUSE_BUTTON  = 2,

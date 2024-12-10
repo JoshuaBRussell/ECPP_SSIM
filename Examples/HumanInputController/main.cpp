@@ -21,6 +21,8 @@
 #include "Constraint.hpp"
 #include "HumanInput_System.hpp"
 
+#include "./../Examples/HumanInputController/Commands.hpp"
+
 #include "./ECS/components/Rotation_comp.hpp"
 #include "./ECS/components/Position_comp.hpp"
 #include "./ECS/components/Velocity_comp.hpp"
@@ -204,7 +206,25 @@ int main(){
         .target_fps              = TARGET_FPS
     };
 
+    // Create Command Objects 
+    AddNewComplexObj *comm = new AddNewComplexObj;
+    DeleteEntNearMouse *comm2 = new DeleteEntNearMouse;
     
+    struct key_action_pair key_pair_1 = {
+        .key_opt    = R_KEY,
+        .key_action = PRESSED,
+        .command    = comm
+    };
+
+    struct key_action_pair key_pair_2 = {
+        .key_opt    = D_KEY,
+        .key_action = PRESSED,
+        .command    = comm2
+    };
+
+    HumanInput_add_key_action_pair(key_pair_1);
+    HumanInput_add_key_action_pair(key_pair_2);
+
     Constraint_System_Init(my_world); 
     Render_System_Init(my_world, render_config); 
 
