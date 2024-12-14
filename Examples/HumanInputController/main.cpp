@@ -144,6 +144,7 @@ void Custom_Plots(ECS_Manager &world){
 
 }
 
+
 int main(){
 
     ECS_Manager my_world; 
@@ -204,18 +205,22 @@ int main(){
         .screen_height_in_pixels = SCREEN_HEIGHT_IN_PIXELS,
         .window_title            = WINDOW_NAME, 
         .target_fps              = TARGET_FPS
-    };
-
+    }; 
+     
+    
     // Create Command Objects 
     AddNewComplexObj *comm = new AddNewComplexObj;
     DeleteEntNearMouse *comm2 = new DeleteEntNearMouse;
-    
+
     std::vector<struct key_action_pair> key_action_pairs = {
-        {R_KEY, PRESSED, comm},
-        {D_KEY, PRESSED, comm2}
+        {R_KEY, RELEASED, comm}
     };
 
-    HumanInput_System_Init(my_world, key_action_pairs);
+    std::vector<struct button_action_pair> button_action_pairs = {
+        {LEFT_MOUSE_BUTTON, PRESSED, comm2}
+    };
+
+    HumanInput_System_Init(my_world, key_action_pairs, button_action_pairs);
 
     Constraint_System_Init(my_world); 
     Render_System_Init(my_world, render_config); 

@@ -4,58 +4,99 @@
 #include "ECSManager.hpp"
 
 
+static std::vector<struct key_action_pair> *key_action_pairs_ptr;
+static std::vector<struct button_action_pair> *button_action_pairs_ptr;
 
-// The method of creating a (what is intended to be) a const vector, 
-// with the initialization list apparently causes an excessive move/copy.
-// It's not really an issue (premature optimization and all that), but
-// I found this StackOverflow Questions Interesting:
-// https://stackoverflow.com/questions/26457203/c-c11-efficient-way-to-have-static-array-vector-of-objects-initialized-with
-static std::vector<struct key_action_pair> s_key_action_pairs; // "s_" so it would not cause a naming issue in
-                                                               // _Init
 
 void HumanInput_add_key_action_pair(struct key_action_pair key_action_pair){
-    s_key_action_pairs.push_back(key_action_pair);
+    key_action_pairs_ptr->push_back(key_action_pair);
 }
 
-// This way of creating the vector on the stack then passing it into here to be copied(?)
-// seems odd/wrong.
-void HumanInput_System_Init(ECS_Manager &world, std::vector<struct key_action_pair> &key_action_pairs){
-    s_key_action_pairs = key_action_pairs;
+void HumanInput_add_button_action_pair(struct button_action_pair button_action_pair){
+    button_action_pairs_ptr->push_back(button_action_pair);
+}
+
+void HumanInput_System_Init(ECS_Manager &world,
+                            std::vector<struct key_action_pair> &key_action_pairs,
+                            std::vector<struct button_action_pair> &button_action_pairs){
+
+    key_action_pairs_ptr = new std::vector<struct key_action_pair>(key_action_pairs);
+    button_action_pairs_ptr = new std::vector<struct button_action_pair>(button_action_pairs);
 }
 
 void HumanInput_System(ECS_Manager &world){
 
-    for (auto it = s_key_action_pairs.begin(); it != s_key_action_pairs.end(); it++){
+    // Poll Keyboard Keys
+    if (key_action_pairs_ptr){ // Possible + Valid the user didn't pass in a key-action pair vector
+        for (auto it = key_action_pairs_ptr->begin(); it != key_action_pairs_ptr->end(); it++){
 
-        bool should_act = false;
+            bool should_act = false;
 
-        // Only have to support small and finite number of key/button actions 
-        switch(it->key_action) {
+            // Only have to support small and finite number of key/button actions 
+            switch(it->button_action) {
 
-            case PRESSED:
-                should_act = Input_is_key_pressed(it->key_opt);
-                break;
+                case PRESSED:
+                    should_act = Input_is_key_pressed(it->key_opt);
+                    break;
 
-            case PRESSED_REPEAT:
-                should_act = Input_is_key_pressed_repeat(it->key_opt);
-                break;
+                case PRESSED_REPEAT:
+                    should_act = Input_is_key_pressed_repeat(it->key_opt);
+                    break;
 
-            case DOWN:
-                should_act = Input_is_key_down(it->key_opt);
-                break;
+                case DOWN:
+                    should_act = Input_is_key_down(it->key_opt);
+                    break;
 
-            case RELEASED:
-                should_act = Input_is_key_released(it->key_opt);
-                break;
+                case RELEASED:
+                    should_act = Input_is_key_released(it->key_opt);
+                    break;
 
-            case UP:
-                should_act = Input_is_key_up(it->key_opt);
-                break;
+                case UP:
+                    should_act = Input_is_key_up(it->key_opt);
+                    break;
 
+            }
+
+            if (should_act){
+                it->command->execute(world);
+            }
         }
+    }
 
-        if (should_act){
-            it->command->execute(world);
+    // Poll Mouse Buttons
+    if (button_action_pairs_ptr){ // Possible + Valid the user didn't pass in a button-action pair vector
+        for (auto it = button_action_pairs_ptr->begin(); it != button_action_pairs_ptr->end(); it++){
+
+            bool should_act = false;
+
+            // Only have to support small and finite number of key/button actions 
+            switch(it->button_action) {
+
+                case PRESSED:
+                    should_act = Input_is_mouse_button_pressed(it->key_opt);
+                    break;
+
+                case PRESSED_REPEAT:
+                    // N/A - currently not supported
+                    break;
+
+                case DOWN:
+                    should_act = Input_is_mouse_button_down(it->key_opt);
+                    break;
+
+                case RELEASED:
+                    should_act = Input_is_mouse_button_released(it->key_opt);
+                    break;
+
+                case UP:
+                    should_act = Input_is_mouse_button_up(it->key_opt);
+                    break;
+
+            }
+
+            if (should_act){
+                it->command->execute(world);
+            }
         }
     }
 
