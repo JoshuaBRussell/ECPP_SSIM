@@ -24,14 +24,34 @@ void HumanInput_System_Init(ECS_Manager &world, std::vector<struct key_action_pa
 }
 
 void HumanInput_System(ECS_Manager &world){
-        
+
     for (auto it = s_key_action_pairs.begin(); it != s_key_action_pairs.end(); it++){
 
         bool should_act = false;
-        
-        // Only have to support small and finite number of key/button actions
-        if (it->key_action == PRESSED){
-            should_act = Input_is_key_pressed(it->key_opt);
+
+        // Only have to support small and finite number of key/button actions 
+        switch(it->key_action) {
+
+            case PRESSED:
+                should_act = Input_is_key_pressed(it->key_opt);
+                break;
+
+            case PRESSED_REPEAT:
+                should_act = Input_is_key_pressed_repeat(it->key_opt);
+                break;
+
+            case DOWN:
+                should_act = Input_is_key_down(it->key_opt);
+                break;
+
+            case RELEASED:
+                should_act = Input_is_key_released(it->key_opt);
+                break;
+
+            case UP:
+                should_act = Input_is_key_up(it->key_opt);
+                break;
+
         }
 
         if (should_act){
