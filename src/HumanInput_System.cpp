@@ -5,20 +5,28 @@
 #include "./../Examples/HumanInputController/Commands.hpp"
 
 
-static std::vector<struct key_action_pair> key_action_pairs;
+
+// The method of creating a (what is intended to be) a const vector, 
+// with the initialization list apparently causes an excessive move/copy.
+// It's not really an issue (premature optimization and all that), but
+// I found this StackOverflow Questions Interesting:
+// https://stackoverflow.com/questions/26457203/c-c11-efficient-way-to-have-static-array-vector-of-objects-initialized-with
+static std::vector<struct key_action_pair> s_key_action_pairs; // "s_" so it would not cause a naming issue in
+                                                               // _Init
 
 void HumanInput_add_key_action_pair(struct key_action_pair key_action_pair){
-    key_action_pairs.push_back(key_action_pair);
+    s_key_action_pairs.push_back(key_action_pair);
 }
 
-
-void HumanInput_System_Init(ECS_Manager &world, struct human_input_config &human_input_config){
-
+// This way of creating the vector on the stack then passing it into here to be copied(?)
+// seems odd/wrong.
+void HumanInput_System_Init(ECS_Manager &world, std::vector<struct key_action_pair> &key_action_pairs){
+    s_key_action_pairs = key_action_pairs;
 }
 
 void HumanInput_System(ECS_Manager &world){
         
-    for (auto it = key_action_pairs.begin(); it != key_action_pairs.end(); it++){
+    for (auto it = s_key_action_pairs.begin(); it != s_key_action_pairs.end(); it++){
 
         bool should_act = false;
         

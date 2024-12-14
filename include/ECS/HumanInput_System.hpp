@@ -19,7 +19,7 @@ struct key_action_pair {
 };
 
 
-void HumanInput_System_Init(ECS_Manager &world, struct human_input_config &human_input_config);
+void HumanInput_System_Init(ECS_Manager &world, std::vector<key_action_pair> &key_action_pairs);
 
 void HumanInput_add_key_action_pair(struct key_action_pair);
 

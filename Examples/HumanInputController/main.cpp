@@ -210,20 +210,12 @@ int main(){
     AddNewComplexObj *comm = new AddNewComplexObj;
     DeleteEntNearMouse *comm2 = new DeleteEntNearMouse;
     
-    struct key_action_pair key_pair_1 = {
-        .key_opt    = R_KEY,
-        .key_action = PRESSED,
-        .command    = comm
+    std::vector<struct key_action_pair> key_action_pairs = {
+        {R_KEY, PRESSED, comm},
+        {D_KEY, PRESSED, comm2}
     };
 
-    struct key_action_pair key_pair_2 = {
-        .key_opt    = D_KEY,
-        .key_action = PRESSED,
-        .command    = comm2
-    };
-
-    HumanInput_add_key_action_pair(key_pair_1);
-    HumanInput_add_key_action_pair(key_pair_2);
+    HumanInput_System_Init(my_world, key_action_pairs);
 
     Constraint_System_Init(my_world); 
     Render_System_Init(my_world, render_config); 
