@@ -24,7 +24,6 @@
 #include "HumanInput_System.hpp"
 #include "CommInterpreter_System.hpp"
 
-#include "./../Examples/HumanInputController/Commands.hpp"
 #include "./../Examples/HumanEntityController/EntityCommands.hpp"
 
 #include "./ECS/components/Rotation_comp.hpp"
