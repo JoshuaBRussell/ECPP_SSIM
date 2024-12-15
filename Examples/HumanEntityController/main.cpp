@@ -3,6 +3,8 @@
 #include <math.h>
 #include <cmath>
 
+#include "EntityControl_comp.hpp"
+#include "Input.hpp"
 #include "imgui.h"
 #include "implot.h"
 #include "rlImGui.h"
@@ -20,8 +22,10 @@
 #include "ConstraintVisual.hpp"
 #include "Constraint.hpp"
 #include "HumanInput_System.hpp"
+#include "CommInterpreter_System.hpp"
 
 #include "./../Examples/HumanInputController/Commands.hpp"
+#include "./../Examples/HumanEntityController/EntityCommands.hpp"
 
 #include "./ECS/components/Rotation_comp.hpp"
 #include "./ECS/components/Position_comp.hpp"
@@ -145,11 +149,78 @@ void Custom_Plots(ECS_Manager &world){
 }
 
 
+void add_complex_shape_w_ctrl_to_world(ECS_Manager &world){
+    
+    int rb1_id = -1;
+    int rb2_id = -1;
+    int rb3_id = -1;
+    int rb4_id = -1;
+    int rb5_id = -1; 
+
+    // First Rigid Body
+    rb1_id = world.create_entity();
+    add_rigid_body_to_world(world, rb1_id, Eigen::Vector2d(1.0, 0.0), 1.5707);
+    
+    // Second Rigid Body
+    rb2_id = world.create_entity(); 
+    add_rigid_body_to_world(world, rb2_id, Eigen::Vector2d(2.0, -1.0), 0.0); 
+    
+    // Third Rigid Body
+    rb3_id = world.create_entity(); 
+    add_rigid_body_to_world(world, rb3_id, Eigen::Vector2d(1.0, -2.0), 1.5707); 
+
+    // Fourth Rigid Body
+    rb4_id = world.create_entity(); 
+    add_rigid_body_to_world(world, rb4_id, Eigen::Vector2d(0.0, -1.0), 0.0); 
+
+    // Fifth Rigid Body
+    rb5_id = world.create_entity(); 
+    add_rigid_body_to_world(world, rb5_id, Eigen::Vector2d(1.0, -1.0), 0.785397);
+
+    // Add the EntityControl_Component to the center entity
+    EntityControl_Component ent_ctrl_comp = {rb5_id,
+                                             CommandDirections::NO_CMD};
+    world.add_component<EntityControl_Component>(ent_ctrl_comp);
+
+    int rel_constr_id = world.create_entity();
+    add_rel_constr(world, rel_constr_id, rb1_id, rb4_id,
+                    Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, 1.0));
+      
+
+    // Relative Position Constraint #1
+    rel_constr_id = world.create_entity();
+    add_rel_constr(world, rel_constr_id, rb1_id, rb2_id,
+                    Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, 1.0));
+     
+    // Relative Position Constraint #2
+    rel_constr_id = world.create_entity();
+    add_rel_constr(world, rel_constr_id, rb2_id, rb3_id,
+                    Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0));
+      
+    // Relative Position Constraint #3
+    rel_constr_id = world.create_entity();
+    add_rel_constr(world, rel_constr_id, rb3_id, rb4_id,
+                    Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0));
+
+    // Relative Position Constraint #4
+    rel_constr_id = world.create_entity();
+    add_rel_constr(world, rel_constr_id, rb4_id, rb5_id,
+                    Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, 1.414213), Eigen::Vector2d(0.0, 0.0));
+      
+    // Relative Position Constraint #5
+    rel_constr_id = world.create_entity();
+    add_rel_constr(world, rel_constr_id, rb2_id, rb5_id,
+                    Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, -1.414213), Eigen::Vector2d(2.0, -2.0));
+    
+}
+
+
 int main(){
 
     ECS_Manager my_world; 
     
-    my_world.register_component<GUI_Component>(); 
+    my_world.register_component<GUI_Component>();
+    my_world.register_component<EntityControl_Component>();
     my_world.register_component<Render_Component>();
     my_world.register_component<Position_Component>();
     my_world.register_component<Velocity_Component>(); 
@@ -177,9 +248,11 @@ int main(){
                                               SCREEN_HEIGHT_IN_PIXELS , SCREEN_WIDTH_IN_PIXELS}; // x, y, h, w;
     Rotation_Component bg_rot_comp       = {bg_id, 0.0}; 
     my_world.add_component<Render_Component>(bg_render_comp);
-    my_world.add_component<Rotation_Component>(bg_rot_comp); 
-    
-     
+    my_world.add_component<Rotation_Component>(bg_rot_comp);
+
+
+    add_complex_shape_w_ctrl_to_world(my_world);
+
     // Initialize Systems after known established entites are created  
      
     // ---- Init Systems ---- //
@@ -208,16 +281,20 @@ int main(){
     }; 
      
     
-    // Create Command Objects 
-    AddNewComplexObj *comm = new AddNewComplexObj;
-    DeleteEntNearMouse *comm2 = new DeleteEntNearMouse;
-
+    // Create Command Objects
+    SendUpCommand    *up_comm    = new SendUpCommand();
+    SendDownCommand  *down_comm  = new SendDownCommand();
+    SendLeftCommand  *left_comm  = new SendLeftCommand();
+    SendRightCommand *right_comm = new SendRightCommand();
+    
     std::vector<struct key_action_pair> key_action_pairs = {
-        {R_KEY, RELEASED, comm}
+        {W_KEY, DOWN, up_comm},
+        {S_KEY, DOWN, down_comm},
+        {A_KEY, DOWN, left_comm},
+        {D_KEY, DOWN, right_comm}
     };
 
     std::vector<struct button_action_pair> button_action_pairs = {
-        {LEFT_MOUSE_BUTTON, PRESSED, comm2}
     };
 
     HumanInput_System_Init(my_world, key_action_pairs, button_action_pairs);
@@ -241,7 +318,9 @@ int main(){
     while (!Render_System_WindowShouldClose()) // Detect window close button or ESC key
     {
         for (int i = 0; i < 100; i ++){
-            Gravity_System(my_world); 
+            HumanInput_System(my_world); 
+            CommInterpreter_System(my_world); 
+            //Gravity_System(my_world); 
             Constraint_System(my_world);
             Newtonian_System(my_world, GetFrameTime()/100);
             
@@ -249,7 +328,8 @@ int main(){
         
         Render_System(my_world); 
         
-        HumanInput_System(my_world); 
+        
+        
          
     }
     
