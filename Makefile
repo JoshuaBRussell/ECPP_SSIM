@@ -243,3 +243,10 @@ human_input_controller: $(objects) libimgui_rl_backend.a libraylib.a human_input
 
 human_input_controller_main.o:
 	$(CXX) -c $(compileFlags) Examples/HumanInputController/main.cpp -o bin/human_input_controller_main.o
+
+# Link the program and create the executable
+human_entity_controller: $(objects) libimgui_rl_backend.a libraylib.a human_entity_controller_main.o
+	$(CXX) $(objects) $(imgui_objects) bin/human_entity_controller_main.o -o $(target) $(linkFlags)
+
+human_entity_controller_main.o:
+	$(CXX) -c $(compileFlags) Examples/HumanEntityController/main.cpp -o bin/human_entity_controller_main.o
