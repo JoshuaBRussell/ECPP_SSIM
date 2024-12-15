@@ -23,7 +23,7 @@ objects := $(patsubst src/%, $(buildDir)/%, $(patsubst %.cpp, %.o, $(sources)))
 depends := $(patsubst %.o, %.d, $(objects))
 
 include_dirs := -I include -I ./include/ECS -I ./include/ECS/components -I /usr/include/eigen3/ -I ./vendor/raylib/src -I ./vendor/raylib-cpp/include -I ./vendor/rlImGui/ -I ./vendor/imgui/ -I ./vendor/implot/
-compileFlags := -std=c++17  $(include_dirs) -O1 -Wall
+compileFlags := -std=c++17  $(include_dirs) -O1 -Wall -g3
 linkFlags = -L lib/$(platform) -l raylib -l imgui_rl_backend -l implot
 
 # ImGui Itself
@@ -236,3 +236,17 @@ delete_complex_shape: $(objects) libimgui_rl_backend.a libraylib.a delete_comple
 
 delete_complex_shape_main.o:
 	$(CXX) -c $(compileFlags) Examples/DeleteComplexShape/main.cpp -o bin/delete_complex_shape_main.o
+
+# Link the program and create the executable
+human_input_controller: $(objects) libimgui_rl_backend.a libraylib.a human_input_controller_main.o
+	$(CXX) $(objects) $(imgui_objects) bin/human_input_controller_main.o -o $(target) $(linkFlags)
+
+human_input_controller_main.o:
+	$(CXX) -c $(compileFlags) Examples/HumanInputController/main.cpp -o bin/human_input_controller_main.o
+
+# Link the program and create the executable
+human_entity_controller: $(objects) libimgui_rl_backend.a libraylib.a human_entity_controller_main.o
+	$(CXX) $(objects) $(imgui_objects) bin/human_entity_controller_main.o -o $(target) $(linkFlags)
+
+human_entity_controller_main.o:
+	$(CXX) -c $(compileFlags) Examples/HumanEntityController/main.cpp -o bin/human_entity_controller_main.o

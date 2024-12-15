@@ -3,6 +3,7 @@
 #include "ECS.hpp"
 #include "ECSManager.hpp"
 
+#include <Eigen/Core>
 
 // ---- Graphics System ---- //
 // Pre-Graphics System
@@ -34,3 +35,25 @@ void Render_System_add_post_render(void (*sys)(ECS_Manager&));
 void Render_System_Exclusive(ECS_Manager &world);
 void Render_System_NonExclusive(ECS_Manager &world);
 void Render_System(ECS_Manager &world);
+
+// ---- Util Functions ---- //
+
+// The idea was that the scale functions would just transform the (...)scale_X/Y functions
+// would handle the scale factor - esque conversions
+//
+// The (...)_X/Y functions would handle the transforms. 
+
+// I don't like this and it either needs to change or be made more clear which is which.
+double screen2worldscale_X(int screen_x, double screen_width_in_meters);
+double screen2worldscale_Y(int screen_y, double screen_height_in_meters);
+
+double screen2world_Y(int screen_y, double screen_height_in_meters);
+double screen2world_X(int screen_x, double screen_width_in_meters);
+
+//Scale differences
+double world2screenscale_X(double x, double screen_width_in_meters);
+double world2screenscale_Y(double y, double screen_height_in_meters);
+
+// Coord transform that assumes orthogonality for the transform
+double world2screen_X(double x, double screen_width_in_meters);
+double world2screen_Y(double y, double screen_height_in_meters);

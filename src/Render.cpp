@@ -1,6 +1,7 @@
 #include "Render.hpp"
 
 #include <map>
+#include <Eigen/Core>
 #include <assert.h>
 
 #include "ECS.hpp"
@@ -22,10 +23,17 @@ static ssize_t post_render_systems_count = 0;
 
 static std::map<std::string, raylib::Texture2D*> texture_repo;
 
+
+static int screen_width_in_pixels;
+static int screen_height_in_pixels;
+
 void Render_System_Init(ECS_Manager &world, struct render_config &render_config){
     raylib::Color textColor(LIGHTGRAY);
     InitWindow(render_config.screen_width_in_pixels, render_config.screen_height_in_pixels, render_config.window_title.c_str()); 
     SetTargetFPS(render_config.target_fps);
+
+    screen_width_in_pixels = render_config.screen_width_in_pixels;
+    screen_height_in_pixels = render_config.screen_height_in_pixels;
 
 }
 
@@ -109,10 +117,53 @@ void Render_System(ECS_Manager &world){
         double rotation = (180.0/3.14159)*world.get_component<Rotation_Component>(it->entity_id)->angle;
         texture_ptr->Draw(src_rec, dest_rec, origin, -1*rotation); // Raylib has positive angles going
                                                                    // CW - I prefer the CCW - the way God intended.
+        
+        DrawText(std::to_string(it->entity_id).c_str(), x_pos, y_pos, 12, GREEN); 
+
     }
 
     call_post_render_systems(world);
     
     EndDrawing();
 
+}
+
+// ---- Util Functions ---- //
+
+// The idea was that the scale functions would just transform the (...)scale_X/Y functions
+// would handle the scale factor - esque conversions
+//
+// The (...)_X/Y functions would handle the transforms. 
+
+// I don't like this and it either needs to change or be made more clear which is which.
+double screen2worldscale_X(int screen_x, double screen_width_in_meters){
+    return screen_x * ((double)screen_width_in_meters/screen_width_in_pixels); 
+};
+
+double screen2worldscale_Y(int screen_y, double screen_height_in_meters){
+    return -(screen_y - screen_height_in_pixels)*((double)screen_height_in_meters/screen_height_in_pixels);
+};
+
+double screen2world_Y(int screen_y, double screen_height_in_meters){
+    return  -((double)screen_height_in_meters/screen_height_in_pixels) * (screen_y - screen_height_in_pixels) - screen_height_in_meters/2.0;
+};
+
+double screen2world_X(int screen_x, double screen_width_in_meters){
+    return screen2worldscale_X(screen_x, screen_width_in_meters) - screen_width_in_meters/2.0;
+}
+
+//Scale differences
+double world2screenscale_X(double x, double screen_width_in_meters){
+    return x * ((double)screen_width_in_pixels/screen_width_in_meters) + (double)screen_width_in_pixels/2.0;  
+}
+double world2screenscale_Y(double y, double screen_height_in_meters){
+    return y * ((double)screen_height_in_pixels/screen_height_in_meters) + (double)screen_height_in_pixels/2.0;
+}
+
+// Coord transform that assumes orthogonality for the transform
+double world2screen_X(double x, double screen_width_in_meters){
+    return world2screenscale_X(x, screen_width_in_meters);
+}
+double world2screen_Y(double y, double screen_height_in_meters){
+    return -world2screenscale_Y(y, screen_height_in_meters) + screen_height_in_pixels;
 }
