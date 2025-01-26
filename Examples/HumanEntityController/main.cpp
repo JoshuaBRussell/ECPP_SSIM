@@ -15,6 +15,8 @@
 
 #include "ECSManager.hpp"
 
+#include "RigidBodyUtil.hpp"
+
 #include "Newtonian_Sys.hpp"
 #include "Gravity_Sys.hpp"
 #include "Render.hpp"
