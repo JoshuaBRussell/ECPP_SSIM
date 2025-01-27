@@ -16,6 +16,8 @@
 
 #include <Eigen/Dense>
 
+#include "RigidBodyUtil.hpp"
+
 #include "Mass_comp.hpp"
 #include "main.hpp"
 
@@ -55,12 +57,13 @@
 #include "./ECS/components/Constraint_comp.hpp"
 #include "./ECS/components/Gravity_comp.hpp"
 #include "./ECS/components/Connector_comp.hpp"
+#include "./ECS/components/GUI_comp.hpp"
 
 #define WORLD_RADIUS (SCREEN_WIDTH_METERS/2)
 
 #define TOTAL_SUBSTEPS 8
 
-#define TARGET_FPS 60.0
+#define TARGET_FPS 60
 
 #define TEMP_DT (1/TARGET_FPS)
 
@@ -68,95 +71,44 @@
 
 #define WINDOW_NAME "Pendulum Visualization"
 
-void add_rigid_body_to_world(ECS_Manager &world, int entity_id, Eigen::Vector2d pos, double angle){
-    
-    Particle_Component particle_flag      = {entity_id};
-    Position_Component particle_pos       = {entity_id, pos};
-    Velocity_Component particle_vel       = {entity_id, Eigen::Vector2d(0.0, 0.0)}; 
-    Rotation_Component rot_val            = {entity_id, angle}; 
-    Render_Component render_val           = {entity_id, "./misc/black_square.png",
-                                                        SCREEN_WIDTH_IN_PIXELS/2, SCREEN_HEIGHT_IN_PIXELS/2, 
-                                                        50, 200}; // x, y, h, w; 
-    ODE_Component ode_val                 = {entity_id, INT_METHOD::RK4}; 
-    Force_Component force_val             = {entity_id, Eigen::Vector2d(0.0, 0.0)};
-    Mass_Component mass_val               = {entity_id, 1.0}; 
-    Gravity_Component grav_val            = {entity_id}; 
-    Torque_Component torque_val           = {entity_id, 0.0}; 
-    Rot_Inertia_Component rot_inertia_val = {entity_id, 1.0};
-    Angular_Vel_Component rot_vel_val     = {entity_id, 0.0};
 
-    world.add_component<Particle_Component>(particle_flag);
-    world.add_component<Position_Component>(particle_pos);
-    world.add_component<Velocity_Component>(particle_vel);
-    world.add_component<Render_Component>(render_val);
-    world.add_component<Rotation_Component>(rot_val); 
-    world.add_component<ODE_Component>(ode_val);
-    world.add_component<Force_Component>(force_val); 
-    world.add_component<Mass_Component>(mass_val); 
-    world.add_component<Gravity_Component>(grav_val); 
-    world.add_component<Torque_Component>(torque_val);
-    world.add_component<Rot_Inertia_Component>(rot_inertia_val); 
-    world.add_component<Angular_Vel_Component>(rot_vel_val);    
-    
-}
 
-void add_fixed_pos_constr(ECS_Manager &world, 
-                          int entity_id, int rb_id, 
-                          Eigen::Vector2d world_pos, Eigen::Vector2d rel_pos){
+// ---- Custom Plot Related ---- //
+static std::map<int, float*> data_storage;
 
-    Fixed_Rot_Component fixed_rot_constr = {entity_id, rb_id, 
-                                            world_pos, // world space point 
-                                            rel_pos,  // body space  
-                                            0.0}; 
-    Render_Component init_constr_rend       = {entity_id, "./misc/blue_circle.png",
-                                                          SCREEN_WIDTH_IN_PIXELS/2, SCREEN_HEIGHT_IN_PIXELS/2, 
-                                                          15, 15}; 
-    Position_Component init_constr_pos      = {entity_id, world_pos}; 
-    Particle_Component init_particle_flag   = {entity_id}; 
-    Rotation_Component init_constr_rot_val  = {entity_id, 1.5708};
+struct custom_plot_config {
 
-    world.add_component<Fixed_Rot_Component>(fixed_rot_constr);
-    world.add_component<Position_Component>(init_constr_pos); 
-    world.add_component<Particle_Component>(init_particle_flag); 
-    world.add_component<Render_Component>(init_constr_rend);
-    world.add_component<Rotation_Component>(init_constr_rot_val);
+};
 
-}
-
-void add_rel_constr(ECS_Manager &world, 
-                     int entity_id, int rb1_id, int rb2_id, 
-                     Eigen::Vector2d rel_pos1, Eigen::Vector2d rel_pos2, Eigen::Vector2d init_pos){
-  
-    Relative_Rot_Component rel_rot_constr = {entity_id, rb1_id, rb2_id, 
-                                            rel_pos1, // body space - rigid body 1 
-                                            rel_pos2, // body space - rigid body 2 
-                                            0.0}; 
-    Render_Component init_constr_rend2      = {entity_id, "./misc/blue_circle.png",
-                                              SCREEN_WIDTH_IN_PIXELS/2, SCREEN_HEIGHT_IN_PIXELS/2, 
-                                              15, 15}; 
-    Position_Component init_constr_pos2     = {entity_id, init_pos}; 
-    Particle_Component init_particle_flag4  = {entity_id}; 
-    Rotation_Component init_constr_rot_val2     = {entity_id, 1.5708};
-
-    world.add_component<Relative_Rot_Component>(rel_rot_constr);
-    world.add_component<Position_Component>(init_constr_pos2); 
-    world.add_component<Particle_Component>(init_particle_flag4); 
-    world.add_component<Render_Component>(init_constr_rend2);
-    world.add_component<Rotation_Component>(init_constr_rot_val2);
-
-}
 static float x[180];
-static float y[180];
-static float y2[180];
 
 static float t = 0;
 static int   i = 0;
 
-void custom_plots(ECS_Manager &world, int rb1_id, int rb2_id){
+void Custom_Plots_Init(ECS_Manager &world, struct custom_plot_config &custom_plot_config){
+    
+    for (auto it = world.get_component_begin<GUI_Component>();
+              it < world.get_component_end<GUI_Component>(); it++){
+         
+        // Allocate Memory for a buffer
+        float *f_buffer = new float[256];
+        
+        // Store Pointer to Buffers in Vector
+        data_storage[it->entity_id] = f_buffer;
+    }
+
+    rlImGuiSetup(true);
+}
+
+void Custom_Plots_Shutdown(){
+    rlImGuiShutdown(); // Not really needed, but included for 'completeness'
+};
+
+void Custom_Plots(ECS_Manager &world){
+    
     rlImGuiBegin();
     ImPlot::CreateContext();
 
-    
     bool open = true;
     bool* p_open = &open;
     
@@ -172,35 +124,42 @@ void custom_plots(ECS_Manager &world, int rb1_id, int rb2_id){
     ImGui::Begin("Joint Angles", p_open); 
     
     t += ImGui::GetIO().DeltaTime;
-    
-    Rotation_Component* rot_comp_ptr1 = world.get_component<Rotation_Component>(rb1_id);
-    Rotation_Component* rot_comp_ptr2 = world.get_component<Rotation_Component>(rb2_id);
-    
     i++; 
-    x[i%180] = std::fmod(i * 1.0/TARGET_FPS, 3.0); 
-    y[i%180]  = (180.0/3.14159)*rot_comp_ptr1->angle;  
-    
-    float v = rot_comp_ptr2->angle;
-    while (v >= M_PI) v -= TWO_PI;
-    while (v < M_PI)  v += TWO_PI;  
-    y2[i%180] = (180.0/3.14159)*v - 360.0;
-    //y2[i%180] = (180.0/3.14159)*rot_comp_ptr2->angle - 360.0; 
     
     if (ImPlot::BeginPlot("Line Plot")){
         ImPlot::SetupAxisLimits(ImAxis_X1,  0.0, 3.0); 
         ImPlot::SetupAxisLimits(ImAxis_Y1, -180, 180); 
-        ImPlot::SetupAxes("x", "y");
-        
-        ImPlot::PlotLine("Angle 1", x, y,  i%180, 0, 0, sizeof(float));
-        ImPlot::PlotLine("Angle 2", x, y2, i%180, 0, 0, sizeof(float)); 
+        ImPlot::SetupAxes("x", "y"); 
+
+        for (auto it = world.get_component_begin<GUI_Component>();
+              it < world.get_component_end<GUI_Component>(); it++){
+
+            int rb_id = it->entity_id;
+            
+            Rotation_Component* rot_comp_ptr = world.get_component<Rotation_Component>(rb_id);
+            
+             
+            x[i%180] = std::fmod(i * 1.0/TARGET_FPS, 3.0); 
+            
+            float v = rot_comp_ptr->angle;
+            while (v >= M_PI) v -= TWO_PI;
+            while (v < M_PI)  v += TWO_PI;
+
+            float *f_buffer = data_storage[it->entity_id];
+            
+            *(f_buffer +(i%180)) = (180.0/3.14159)*v - 360.0;
+            
+            ImPlot::PlotLine(("Angle " + std::to_string(it->entity_id)).c_str(), x, f_buffer,  i%180, 0, 0, sizeof(float));
+        }
         
         ImPlot::EndPlot();
-    }
+    } 
     
-    //ImPlot::ShowDemoWindow(); 
     ImPlot::DestroyContext();
     ImGui::End();
+    
     rlImGuiEnd();
+
 }
 
 
@@ -230,6 +189,7 @@ int main() {
      
     
     my_world.register_component<Render_Component>();
+    my_world.register_component<GUI_Component>(); 
     my_world.register_component<Position_Component>();
     my_world.register_component<Velocity_Component>(); 
     my_world.register_component<Motion_Component>(); 
@@ -286,12 +246,34 @@ int main() {
                         Eigen::Vector2d(0.0, -1.0), Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(0.0, 1.0));
          
     } 
+    
+    struct custom_plot_config custom_plot_config = {
+    
+    };
+
+    struct render_config render_config = {
+        .screen_width_in_pixels  = SCREEN_HEIGHT_IN_PIXELS,
+        .screen_height_in_pixels = SCREEN_HEIGHT_IN_PIXELS,
+        .window_title            = WINDOW_NAME, 
+        .target_fps              = TARGET_FPS
+    };
+
+    
+    Constraint_System_Init(my_world); 
+    Render_System_Init(my_world, render_config); 
+
     // Initialize Systems after known established entites are created
     Constraint_Visualization_Init(constr_visual_config1);
     Particle_Visualization_Init(particle_visual_config1);
-    Constraint_System_Init(my_world); 
+    Custom_Plots_Init(my_world, custom_plot_config); 
     
-    rlImGuiSetup(true);
+    // Move the Constraint World Coord. so it can be seen 
+    Render_System_add_pre_render(Constraint_Visualization_System); 
+    // Converts Physical Coordinates to something the Render_System can use (Screen Coords) 
+    Render_System_add_pre_render(Particle_Visualization_System);
+    
+    //DearImGui GUI
+    Render_System_add_post_render(Custom_Plots);
 
     
     while (!w.ShouldClose()) // Detect window close button or ESC key
@@ -308,18 +290,11 @@ int main() {
         // Converts Physical Coordinates to something the Render_System can use (Screen Coords)
         Particle_Visualization_System(my_world);
 
-
-        BeginDrawing();
-        ClearBackground(BLACK);
-        
         Render_System(my_world);
-        custom_plots(my_world, rb1_id, rb2_id); 
-
-        EndDrawing();
     }
-
-    rlImGuiShutdown();
- 
+    
+    Custom_Plots_Shutdown();
+    Render_System_Shutdown(); 
     return 0;
 }
 
