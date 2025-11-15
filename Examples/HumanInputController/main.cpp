@@ -238,6 +238,12 @@ int main(){
     //DearImGui GUI
     //Render_System_add_post_render(Custom_Plots);
     
+
+    // Print basic instructions to console.
+    std::cout << "\nINSTRUCTIONS: RELEASE R_KEY to add a complex looking rigid body object.\n";
+    std::cout << "INSTRUCTIONS: PRESS LEFT_MOUSE_BUTTON to delete a rigid body." << std::endl;
+
+    
     while (!Render_System_WindowShouldClose()) // Detect window close button or ESC key
     {
         for (int i = 0; i < 100; i ++){
